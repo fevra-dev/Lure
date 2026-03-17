@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishOps Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 380px;
+      min-height: 400px;
+      background: #0A0907;
+      color: #D4CCBC;
+      font-family: 'Work Sans', system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .header {
+      background: #141210;
+      padding: 16px;
+      border-bottom: 2px solid #2A2520;
+    }
+
+    .header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #D4CCBC;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: lowercase;
+    }
+
+    .header .version {
+      font-size: 11px;
+      color: #6B6560;
+      font-weight: 400;
+    }
+
+    .status-bar {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .status-item {
+      flex: 1;
+      background: rgba(212,204,188,0.04);
+      padding: 10px 12px;
+      text-align: center;
+    }
+
+    .status-item .count {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .status-item .label {
+      font-size: 10px;
+      color: #6B6560;
+      text-transform: lowercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    .count-critical { color: #BF1B1B; }
+    .count-high { color: #D4861A; }
+    .count-total { color: #D4CCBC; }
+
+    .section {
+      padding: 12px 16px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6B6560;
+      text-transform: lowercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+
+    .event-list {
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .event-list::-webkit-scrollbar { width: 4px; }
+    .event-list::-webkit-scrollbar-track { background: transparent; }
+    .event-list::-webkit-scrollbar-thumb { background: #2A2520; }
+
+    .event {
+      background: rgba(212,204,188,0.03);
+      border-left: 3px solid #2A2520;
+      padding: 8px 10px;
+      margin-bottom: 4px;
+      cursor: default;
+      transition: background 0.15s;
+    }
+
+    .event:hover { background: rgba(212,204,188,0.06); }
+
+    .event.severity-Critical { border-left-color: #BF1B1B; }
+    .event.severity-High { border-left-color: #D4861A; }
+    .event.severity-Medium { border-left-color: #8C7A5C; }
+
+    .event-type {
+      font-size: 11px;
+      font-weight: 600;
+      color: #D4CCBC;
+    }
+
+    .event-detail {
+      font-size: 11px;
+      color: #6B6560;
+      margin-top: 2px;
+      word-break: break-all;
+    }
+
+    .event-time {
+      font-size: 10px;
+      color: #4A4540;
+      margin-top: 2px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #4A4540;
+    }
+
+    .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+
+    .footer {
+      padding: 12px 16px;
+      border-top: 1px solid #1E1B18;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer button {
+      background: none;
+      border: 1px solid #2A2520;
+      color: #6B6560;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-family: 'Work Sans', system-ui, sans-serif;
+      font-size: 11px;
+      transition: all 0.15s;
+    }
+
+    .footer button:hover {
+      border-color: #BF1B1B;
+      color: #BF1B1B;
+    }
+
+    .detectors-count {
+      font-size: 11px;
+      color: #4A4540;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>
+      <span>phishops</span>
+      <span class="version">v2.0.0</span>
+    </h1>
+    <div class="status-bar">
+      <div class="status-item">
+        <div class="count count-critical" id="critical-count">0</div>
+        <div class="label">critical</div>
+      </div>
+      <div class="status-item">
+        <div class="count count-high" id="high-count">0</div>
+        <div class="label">high</div>
+      </div>
+      <div class="status-item">
+        <div class="count count-total" id="total-count">0</div>
+        <div class="label">total</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">recent detections</div>
+    <div class="event-list" id="event-list">
+      <div class="empty-state">
+        <div class="icon">&#x1F6E1;&#xFE0F;</div>
+        <div>no detections yet</div>
+        <div style="font-size:11px; margin-top:4px;">open a demo page to trigger detectors</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span class="detectors-count">21 detectors active</span>
+    <button id="clear-btn">clear events</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

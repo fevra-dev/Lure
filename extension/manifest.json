@@ -1,0 +1,112 @@
+{
+  "manifest_version": 3,
+  "name": "PhishOps Security Suite",
+  "version": "1.0.0",
+  "description": "Browser-native phishing defence: 21 detectors covering OAuth abuse, HTML smuggling, extension supply chain, clipboard injection, fullscreen overlay, passkey theft, QR session hijacking, virtual camera detection, TOAD screen share, and agentic guardrails.",
+
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "management",
+    "webRequest",
+    "webNavigation"
+  ],
+
+  "host_permissions": [
+    "<all_urls>"
+  ],
+
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/state_parameter_abuse.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/agentintentguard.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/autofill_guard.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/clickfix_clipboard_defender.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/fullscreen_guard.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/passkey_guard.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/qrljacking_guard.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/webrtc_guard.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/screenshare_guard.js"],
+      "run_at": "document_start"
+    }
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["content/blob_credential_detector.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16":  "icons/icon16.png",
+      "48":  "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none';"
+  },
+
+  "_architecture": {
+    "telemetry": "All detection events are persisted to chrome.storage.local via lib/telemetry.js. In a production SOC deployment, emitTelemetry() would POST to an Azure Monitor Data Collection Rule (DCR) endpoint for ingestion into the BrowserPhishingTelemetry_CL Sentinel table. For this portfolio build, console.info + local storage is sufficient to demonstrate the pipeline.",
+    "detectors": {
+      "wave1_oauthguard": "OAuth device code flow + state parameter email encoding — background/service-worker.js",
+      "wave1_proxyguard": "AiTM reverse-proxy detection via header analysis — background/service-worker.js",
+      "wave2_dataegress": "blob: URL credential page detection — programmatic injection via webNavigation",
+      "wave3_extensionauditor": "DNR header stripping, ownership drift, C2 polling — background/service-worker.js",
+      "wave3_agentintentguard": "GAN-optimised page + credential focus monitoring — content/agentintentguard.js",
+      "wave4_autofillguard": "Hidden field harvest + DOM extension clickjacking detection — content/autofill_guard.js",
+      "wave5_clickfix": "ClickFix clipboard injection interception — content/clickfix_clipboard_defender.js",
+      "wave5_fullscreenguard": "Browser-in-the-Middle fullscreen overlay detection — content/fullscreen_guard.js",
+      "wave6_passkeyguard": "WebAuthn/Passkey credential substitution detection — content/passkey_guard.js",
+      "wave6_qrljackingguard": "QR code session hijacking detection — content/qrljacking_guard.js",
+      "wave7_webrtcguard": "WebRTC virtual camera detection — content/webrtc_guard.js",
+      "wave7_screenshareguard": "TOAD screen share detection — content/screenshare_guard.js"
+    }
+  }
+}

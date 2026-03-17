@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishOps Demo: FullscreenGuard BitM Detection</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0A0907;
+      color: #D4CCBC;
+      font-family: 'Work Sans', system-ui, -apple-system, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      border-bottom: 2px solid #2A2520;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    h1 { color: #D4CCBC; font-size: 20px; font-weight: 600; text-transform: lowercase; }
+    .badge {
+      display: inline-block;
+      background: #BF1B1B;
+      color: #F5F0E8;
+      font-size: 11px;
+      padding: 2px 8px;
+      margin-left: 8px;
+      vertical-align: middle;
+      text-transform: lowercase;
+    }
+    .threat-card {
+      background: #141210;
+      border: 1px solid #2A2520;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .threat-card h2 { color: #D4861A; font-size: 15px; margin-bottom: 8px; font-weight: 600; }
+    .threat-card p { color: #8C7A5C; font-size: 13px; line-height: 1.6; }
+    .safe-notice {
+      background: rgba(212,134,26,0.08);
+      border: 1px solid #2A2520;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: #D4861A;
+    }
+    .demo-container {
+      background: #141210;
+      border: 2px solid #2A2520;
+      padding: 24px;
+      margin: 20px 0;
+    }
+    button.demo-btn {
+      background: #BF1B1B;
+      color: #F5F0E8;
+      border: none;
+      padding: 10px 24px;
+      cursor: pointer;
+      font-family: 'Work Sans', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.15s;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    button.demo-btn:hover { background: #A31717; }
+    button.demo-btn.safe {
+      background: transparent;
+      border: 1px solid #3A6B1C;
+      color: #3A6B1C;
+    }
+    button.demo-btn.safe:hover { background: rgba(58,107,28,0.1); }
+    .attack-flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      background: #1E1B18;
+      border: 1px solid #2A2520;
+      padding: 8px 14px;
+      font-size: 12px;
+    }
+    .flow-arrow { color: #4A4540; font-size: 18px; }
+    .flow-step.active { border-color: #BF1B1B; color: #BF1B1B; }
+    .log {
+      background: #0F0D0B;
+      border: 1px solid #2A2520;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #3A6B1C;
+      margin-top: 16px;
+    }
+    .signal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .signal-item {
+      background: rgba(212,204,188,0.03);
+      padding: 10px 12px;
+    }
+    .signal-item .name { font-size: 11px; color: #D4861A; font-family: monospace; }
+    .signal-item .weight { font-size: 18px; font-weight: 700; color: #BF1B1B; }
+    .signal-item .desc { font-size: 11px; color: #6B6560; margin-top: 2px; }
+    code { color: #BF1B1B; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>phishops demo <span class="badge">safe simulation</span></h1>
+    <p style="color:#6B6560; margin-top:4px; font-size:13px;">browser-in-the-middle &mdash; fullscreen overlay detection</p>
+  </div>
+
+  <div class="safe-notice">
+    This demo simulates Browser-in-the-Middle fullscreen overlay attacks.
+    Clicking the attack simulation button will request fullscreen mode and
+    create a fake URL bar overlay. The FullscreenGuard will detect and exit fullscreen.
+    Press <code>Esc</code> to exit fullscreen manually at any time.
+  </div>
+
+  <div class="threat-card">
+    <h2>attack chain: browser-in-the-middle fullscreen overlay</h2>
+    <p>
+      Attackers trigger fullscreen mode (often without user gesture via JavaScript),
+      then render a fake browser chrome overlay with a spoofed URL bar showing
+      <code>https://accounts.google.com</code>. The victim believes they're on the
+      legitimate site and enters credentials into the attacker-controlled form.
+      Safari remains unpatched. 1Password &le;8.11.27.2 and LastPass &le;4.150.1 are vulnerable.
+    </p>
+
+    <div class="attack-flow">
+      <div class="flow-step">malicious page</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">requestFullscreen()</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">fake URL bar overlay</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">credential harvest</div>
+    </div>
+  </div>
+
+  <div class="demo-container">
+    <h3 style="color:#D4CCBC; margin-bottom:12px; font-weight:600;">simulate fullscreen overlay attack</h3>
+    <p style="color:#6B6560; font-size:12px; margin-bottom:16px;">
+      Click to trigger a simulated fullscreen overlay attack. The FullscreenGuard
+      will analyze the signals and respond. In a real attack scenario, fullscreen
+      would be forced without user gesture.
+    </p>
+
+    <button class="demo-btn" id="btn-attack">simulate fullscreen attack</button>
+    <button class="demo-btn safe" id="btn-video">legitimate video fullscreen</button>
+    <button class="demo-btn safe" id="btn-analyze">analyze signals only</button>
+
+    <div class="log" id="log">Click a button to run a simulation...</div>
+  </div>
+
+  <div class="threat-card">
+    <h2>detection signals</h2>
+    <div class="signal-grid">
+      <div class="signal-item">
+        <div class="name">no_user_gesture</div>
+        <div class="weight">+0.40</div>
+        <div class="desc">Fullscreen entered with no click/keydown in 1000ms</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">iframe_target</div>
+        <div class="weight">+0.30</div>
+        <div class="desc">Fullscreen element is or contains iframe</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">cross_origin_iframe</div>
+        <div class="weight">+0.20</div>
+        <div class="desc">Fullscreen iframe is cross-origin</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">opacity_manipulation</div>
+        <div class="weight">+0.30</div>
+        <div class="desc">Element opacity dropped below 0.1 after fullscreen</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">overlay_created</div>
+        <div class="weight">+0.35</div>
+        <div class="desc">High z-index element covering &gt;60% viewport</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">fake_browser_chrome</div>
+        <div class="weight">+0.35</div>
+        <div class="desc">URL-bar-like element (narrow, wide, contains https://)</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">credential_field_visible</div>
+        <div class="weight">+0.25</div>
+        <div class="desc">Password field inside fullscreen element</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      checkFullscreenGestureSignal,
+      checkFullscreenTargetSignals,
+      checkPostFullscreenMutations,
+      checkCredentialFieldVisibility,
+      calculateFullscreenRiskScore,
+    } from '../content/fullscreen_guard.js';
+
+    const logEl = document.getElementById('log');
+
+    function log(msg) {
+      const time = new Date().toISOString().split('T')[1].split('.')[0];
+      logEl.textContent += `\n[${time}] ${msg}`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Simulated attack: enter fullscreen, then create a fake URL bar
+    document.getElementById('btn-attack').addEventListener('click', async () => {
+      log('--- Fullscreen overlay attack simulation ---');
+      log('');
+
+      const container = document.createElement('div');
+      container.id = 'attack-container';
+      container.style.cssText = 'background:#0A0907; width:100%; height:100%;';
+      document.body.appendChild(container);
+
+      try {
+        await container.requestFullscreen();
+        log('Entered fullscreen mode');
+
+        // Simulate: create a fake URL bar overlay after 500ms
+        setTimeout(() => {
+          const fakeBar = document.createElement('div');
+          fakeBar.style.cssText = `
+            position:fixed; top:0; left:0; right:0; height:40px;
+            background:#fff; z-index:999999; display:flex; align-items:center;
+            padding:0 16px; font-family:system-ui; font-size:14px; color:#333;
+          `;
+          fakeBar.textContent = 'https://accounts.google.com/signin/v2/identifier';
+          container.appendChild(fakeBar);
+          log('Injected fake URL bar overlay');
+
+          // Create a fake login form
+          const form = document.createElement('div');
+          form.style.cssText = 'padding:100px 40px; text-align:center;';
+          form.innerHTML = `
+            <h2 style="color:#D4CCBC; margin-bottom:20px;">Fake Google Sign-In</h2>
+            <input type="password" placeholder="Enter password" style="padding:10px; width:300px;">
+          `;
+          container.appendChild(form);
+          log('Injected fake credential form');
+          log('');
+
+          // Now analyze
+          const gestureSignals = checkFullscreenGestureSignal();
+          const targetSignals = checkFullscreenTargetSignals();
+          const credSignals = checkCredentialFieldVisibility();
+          const allSignals = [...gestureSignals, ...targetSignals, ...credSignals];
+
+          log(`Gesture signals: ${gestureSignals.map(s => s.id).join(', ') || 'none'}`);
+          log(`Target signals: ${targetSignals.map(s => s.id).join(', ') || 'none'}`);
+          log(`Credential signals: ${credSignals.map(s => s.id).join(', ') || 'none'}`);
+
+          const { riskScore, signalList } = calculateFullscreenRiskScore(allSignals);
+          log('');
+          log(`Risk score: ${riskScore.toFixed(2)}`);
+          log(`Verdict: ${riskScore >= 0.70 ? 'EXIT FULLSCREEN' : riskScore >= 0.50 ? 'ALERT' : 'PASS'}`);
+          log(`Signals: ${signalList.join(', ')}`);
+          log('');
+
+          // Exit fullscreen after showing results
+          setTimeout(() => {
+            document.exitFullscreen?.();
+            container.remove();
+            log('Exited fullscreen — simulation complete');
+          }, 3000);
+        }, 500);
+
+      } catch (err) {
+        log(`Fullscreen request failed: ${err.message}`);
+        log('(This is expected in some browsers without user gesture)');
+        container.remove();
+      }
+    });
+
+    // Legitimate video fullscreen
+    document.getElementById('btn-video').addEventListener('click', () => {
+      log('--- Legitimate video fullscreen (no attack signals expected) ---');
+      log('');
+      log('In a real scenario, a <video> element entering fullscreen');
+      log('would be suppressed by the video element false-positive filter.');
+      log('Video platforms (youtube.com, vimeo.com, etc.) are also allowlisted.');
+      log('');
+      log('The FullscreenGuard checks:');
+      log('  1. Is fullscreenElement a <video> tag? → suppress');
+      log('  2. Is the hostname a known video platform? → suppress');
+      log('  3. Does the element have presentation-mode classes? → suppress');
+      log('');
+    });
+
+    // Signal analysis only
+    document.getElementById('btn-analyze').addEventListener('click', () => {
+      log('--- Signal analysis (no fullscreen) ---');
+      log('');
+
+      const gestureSignals = checkFullscreenGestureSignal();
+      const targetSignals = checkFullscreenTargetSignals();
+      const credSignals = checkCredentialFieldVisibility();
+
+      log(`Gesture signals: ${gestureSignals.length} (requires fullscreen to fire)`);
+      log(`Target signals: ${targetSignals.length} (requires fullscreen to fire)`);
+      log(`Credential signals: ${credSignals.length} (requires fullscreen to fire)`);
+      log('');
+      log('All signal checks require document.fullscreenElement to be set.');
+      log('Use the "simulate fullscreen attack" button for a full demonstration.');
+      log('');
+    });
+  </script>
+</body>
+</html>

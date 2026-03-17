@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishOps Demo: ScreenShareGuard TOAD Detection</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0A0907;
+      color: #D4CCBC;
+      font-family: 'Work Sans', system-ui, -apple-system, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      border-bottom: 2px solid #2A2520;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    h1 { color: #D4CCBC; font-size: 20px; font-weight: 600; text-transform: lowercase; }
+    .badge {
+      display: inline-block;
+      background: #BF1B1B;
+      color: #F5F0E8;
+      font-size: 11px;
+      padding: 2px 8px;
+      margin-left: 8px;
+      vertical-align: middle;
+      text-transform: lowercase;
+    }
+    .threat-card {
+      background: #141210;
+      border: 1px solid #2A2520;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .threat-card h2 { color: #D4861A; font-size: 15px; margin-bottom: 8px; font-weight: 600; }
+    .threat-card p { color: #8C7A5C; font-size: 13px; line-height: 1.6; }
+    .safe-notice {
+      background: rgba(212,134,26,0.08);
+      border: 1px solid #2A2520;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: #D4861A;
+    }
+    .demo-container {
+      background: #141210;
+      border: 2px solid #2A2520;
+      padding: 24px;
+      margin: 20px 0;
+    }
+    button.demo-btn {
+      background: #BF1B1B;
+      color: #F5F0E8;
+      border: none;
+      padding: 10px 24px;
+      cursor: pointer;
+      font-family: 'Work Sans', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.15s;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    button.demo-btn:hover { background: #A31717; }
+    button.demo-btn.safe {
+      background: transparent;
+      border: 1px solid #3A6B1C;
+      color: #3A6B1C;
+    }
+    button.demo-btn.safe:hover { background: rgba(58,107,28,0.1); }
+    .attack-flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      background: #1E1B18;
+      border: 1px solid #2A2520;
+      padding: 8px 14px;
+      font-size: 12px;
+    }
+    .flow-arrow { color: #4A4540; font-size: 18px; }
+    .flow-step.active { border-color: #BF1B1B; color: #BF1B1B; }
+    .log {
+      background: #0F0D0B;
+      border: 1px solid #2A2520;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #3A6B1C;
+      margin-top: 16px;
+    }
+    .signal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .signal-item {
+      background: rgba(212,204,188,0.03);
+      padding: 10px 12px;
+    }
+    .signal-item .name { font-size: 11px; color: #D4861A; font-family: monospace; }
+    .signal-item .weight { font-size: 18px; font-weight: 700; color: #BF1B1B; }
+    .signal-item .desc { font-size: 11px; color: #6B6560; margin-top: 2px; }
+    code { color: #BF1B1B; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>phishops demo <span class="badge">safe simulation</span></h1>
+    <p style="color:#6B6560; margin-top:4px; font-size:13px;">toad screen share detection &mdash; getDisplayMedia interception</p>
+  </div>
+
+  <div class="safe-notice">
+    This demo simulates TOAD (Telephone-Oriented Attack Delivery) screen share attacks
+    by calling signal analysis functions directly. No real screen shares are initiated.
+    The ScreenShareGuard detects suspicious getDisplayMedia() calls and monitors
+    credential field focus during active screen shares.
+  </div>
+
+  <div class="threat-card">
+    <h2>attack chain: toad screen share</h2>
+    <p>
+      Attacker calls victim impersonating IT support, directs them to a web page, and
+      requests screen share via <code>getDisplayMedia()</code>. Once sharing is active,
+      the attacker observes MFA codes, password entry, sensitive documents, and session
+      tokens. Used by MuddyWater/TA450, RansomHub, Luna Moth, and BazarCall. TOAD
+      represents 47% of documented 2025 social engineering attacks.
+    </p>
+
+    <div class="attack-flow">
+      <div class="flow-step">phone call (IT support)</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">victim visits page</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">getDisplayMedia()</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">attacker sees MFA + passwords</div>
+    </div>
+  </div>
+
+  <div class="demo-container">
+    <h3 style="color:#D4CCBC; margin-bottom:12px; font-weight:600;">simulate screen share detection</h3>
+    <p style="color:#6B6560; font-size:12px; margin-bottom:16px;">
+      Click to simulate screen share requests under various conditions
+      and analyze detection signals.
+    </p>
+
+    <button class="demo-btn" id="btn-toad">toad attack signals</button>
+    <button class="demo-btn" id="btn-credential">credential during share</button>
+    <button class="demo-btn safe" id="btn-legitimate">legitimate share (should pass)</button>
+    <button class="demo-btn safe" id="btn-analyze">analyze page context</button>
+
+    <div class="log" id="log">Click a button to run a simulation...</div>
+  </div>
+
+  <div class="threat-card">
+    <h2>detection signals</h2>
+    <div class="signal-grid">
+      <div class="signal-item">
+        <div class="name">non_platform_origin</div>
+        <div class="weight">+0.35</div>
+        <div class="desc">getDisplayMedia() from non-video/support platform</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">no_user_gesture</div>
+        <div class="weight">+0.30</div>
+        <div class="desc">No click/keydown within 1000ms before call</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">support_page_context</div>
+        <div class="weight">+0.25</div>
+        <div class="desc">Page contains tech support / remote assistance text</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">credential_during_share</div>
+        <div class="weight">+0.40</div>
+        <div class="desc">Password field focused while screen share is active</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">rapid_share_request</div>
+        <div class="weight">+0.20</div>
+        <div class="desc">getDisplayMedia() within 5s of page load</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">cross_origin_iframe</div>
+        <div class="weight">+0.30</div>
+        <div class="desc">getDisplayMedia() from cross-origin iframe</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      checkScreenShareSignals,
+      checkScreenSharePageContext,
+      calculateScreenShareRiskScore,
+      _setLastGestureTimestamp,
+    } from '../content/screenshare_guard.js';
+
+    const logEl = document.getElementById('log');
+
+    function log(msg) {
+      const time = new Date().toISOString().split('T')[1].split('.')[0];
+      logEl.textContent += `\n[${time}] ${msg}`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    document.getElementById('btn-toad').addEventListener('click', () => {
+      log('--- TOAD attack simulation ---');
+      log('');
+
+      _setLastGestureTimestamp(0); // No gesture (simulating automated call)
+
+      const shareSignals = checkScreenShareSignals();
+      const pageSignals = checkScreenSharePageContext();
+      const allSignals = [...shareSignals, ...pageSignals];
+      const { riskScore, signalList } = calculateScreenShareRiskScore(allSignals);
+
+      log(`Share signals: ${shareSignals.map(s => s.id).join(', ') || 'none'}`);
+      log(`Page signals: ${pageSignals.map(s => s.id).join(', ') || 'none'}`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${riskScore >= 0.70 ? 'HIGH RISK' : riskScore >= 0.50 ? 'ALERT' : 'PASS'}`);
+      log(`Signals: ${signalList.join(', ')}`);
+      log('');
+    });
+
+    document.getElementById('btn-credential').addEventListener('click', () => {
+      log('--- Credential during screen share simulation ---');
+      log('');
+
+      // Simulate the credential_during_share signal directly
+      const signals = [
+        { id: 'screenshare:non_platform_origin', weight: 0.35 },
+        { id: 'screenshare:no_user_gesture', weight: 0.30 },
+        { id: 'screenshare:credential_during_share', weight: 0.40 },
+      ];
+      const { riskScore, signalList } = calculateScreenShareRiskScore(signals);
+
+      log('Simulated scenario: password field focused during active share');
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${riskScore >= 0.70 ? 'HIGH RISK + CREDENTIAL WARNING' : riskScore >= 0.50 ? 'ALERT' : 'PASS'}`);
+      log(`Signals: ${signalList.join(', ')}`);
+      log('');
+      log('In a live attack, the credential warning banner would overlay the page');
+      log('alerting the user that their password is visible to the screen viewer.');
+      log('');
+    });
+
+    document.getElementById('btn-legitimate').addEventListener('click', () => {
+      log('--- Legitimate screen share (benign) ---');
+      log('');
+
+      _setLastGestureTimestamp(Date.now()); // Recent gesture
+
+      const shareSignals = checkScreenShareSignals();
+      const pageSignals = checkScreenSharePageContext();
+      const allSignals = [...shareSignals, ...pageSignals];
+      const { riskScore, signalList } = calculateScreenShareRiskScore(allSignals);
+
+      log(`Share signals: ${shareSignals.map(s => s.id).join(', ') || 'none'}`);
+      log(`Page signals: ${pageSignals.map(s => s.id).join(', ') || 'none'}`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${riskScore >= 0.70 ? 'HIGH RISK' : riskScore >= 0.50 ? 'ALERT' : 'PASS'}`);
+      log('');
+    });
+
+    document.getElementById('btn-analyze').addEventListener('click', () => {
+      log('--- Page context analysis only ---');
+      log('');
+
+      const signals = checkScreenSharePageContext();
+      log(`Page context signals: ${signals.map(s => `${s.id} (+${s.weight})`).join(', ') || 'none'}`);
+      log('');
+      log('Page context signals detect:');
+      log('  - Tech support / remote assistance text');
+      log('  - IT support / help desk references');
+      log('  - Troubleshoot / diagnostic language');
+      log('  - Non-platform origin (not zoom.us, teams.microsoft.com, etc.)');
+      log('');
+    });
+  </script>
+</body>
+</html>

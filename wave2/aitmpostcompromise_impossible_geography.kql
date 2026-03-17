@@ -1,0 +1,195 @@
+// ============================================================================
+// PhishOps: AiTM Post-Compromise — Impossible Geography Session Reuse
+// ============================================================================
+// Threat:   Starkiller PhaaS (Jinkusu operator group, Abnormal AI Feb 25 2026)
+//           and Evilginx/Modlishka-class real-time AiTM proxy kits.
+//
+//           Attack sequence:
+//             1. Victim navigates to attacker-controlled proxy URL
+//             2. Real-time headless Chrome proxy forwards auth to legitimate IdP
+//             3. Victim completes MFA — attacker simultaneously captures session cookie
+//             4. Attacker imports session cookie into their own browser (different geo)
+//             5. Two authenticated sessions exist for the same account in <30 minutes
+//                from geographically impossible locations
+//
+//           Why this works as a detection:
+//             Starkiller eliminates page-level fingerprinting (no static HTML templates).
+//             The ONLY reliable signal at the identity layer is impossible travel —
+//             the attacker cannot be in the same geographic location as the victim
+//             within seconds of cookie harvest. This query targets that window.
+//
+// Source:   Abnormal AI (Callie Baron, Piotr Wojtyla) — February 25, 2026
+//           Jinkusu attribution confirmed; version 6.2.4 at disclosure
+//
+// Module:   ProxyGuard (infrastructure signals) + Sentinel (identity correlation)
+// Table:    SigninLogs (Microsoft Entra ID / Azure AD sign-in audit log)
+// Severity: High (Critical when TimeDeltaMinutes < 5 — cookie reuse within seconds)
+//
+// Deployment:
+//   Scheduled Analytics Rule
+//   Run frequency:  Every 30 minutes
+//   Lookback:       2 hours
+//   Alert threshold: 1+ result
+// ============================================================================
+
+let lookbackWindow = 2h;
+let impossibleTravelMinutes = 30;   // Adjust down to 10 for tighter FP control
+                                     // after validating against your tenant baseline
+
+SigninLogs
+| where TimeGenerated > ago(lookbackWindow)
+| where ResultType == "0"            // Successful authentications only
+| where RiskLevelDuringSignIn !in ("high", "medium")   // Exclude Entra IDPR-flagged events
+                                                         // (already alerted on separately)
+// -----------------------------------------------------------------------
+// Aggregate per user+app over the lookback window
+// Collect all distinct locations and IPs seen per session
+// -----------------------------------------------------------------------
+| summarize
+    Locations        = make_set(Location, 10),
+    IPs              = make_set(IPAddress, 10),
+    UserAgents       = make_set(UserAgent, 5),
+    SessionIds       = make_set(SessionId, 10),
+    EventCount       = count(),
+    FirstAuth        = min(TimeGenerated),
+    LastAuth         = max(TimeGenerated),
+    AppIds           = make_set(AppId, 5)
+  by UserPrincipalName, AppDisplayName
+// -----------------------------------------------------------------------
+// Impossible travel filter:
+//   >1 distinct Location AND time between first/last auth < threshold
+//   A session cookie reused immediately from a different country
+//   will show multiple location codes within a very short window.
+// -----------------------------------------------------------------------
+| where array_length(Locations) > 1
+| extend TimeDeltaMinutes = datetime_diff('minute', LastAuth, FirstAuth)
+| where TimeDeltaMinutes < impossibleTravelMinutes
+// -----------------------------------------------------------------------
+// Exclude known VPN / split-tunnel patterns:
+//   Legitimate users with corporate VPN may show two locations if VPN
+//   reconnects mid-session. Filter these by excluding consecutive auths
+//   where both IPs resolve to the same ASN (same corporate network).
+//   This is a best-effort exclusion — refine with your corporate IP ranges.
+// -----------------------------------------------------------------------
+| where EventCount < 20              // Suppress users with very high auth churn
+                                     // (service accounts, automation)
+// -----------------------------------------------------------------------
+// Build the alert
+// -----------------------------------------------------------------------
+| extend Severity = case(
+    TimeDeltaMinutes < 5,   "Critical",   // Cookie reused within seconds — near-certain AiTM
+    TimeDeltaMinutes < 15,  "High",
+                            "Medium"
+  )
+| extend Alert = strcat(
+    "Impossible travel post-auth: ",
+    UserPrincipalName,
+    " authenticated from ",
+    tostring(array_length(Locations)),
+    " locations in ",
+    tostring(TimeDeltaMinutes),
+    " minutes. Likely Starkiller/Evilginx AiTM session hijack."
+  )
+| extend CampaignHint = strcat(
+    "AITM_IMPOSSIBLE_TRAVEL_",
+    format_datetime(FirstAuth, "yyyyMMdd_HHmm"),
+    "_", UserPrincipalName
+  )
+| extend Triage = case(
+    TimeDeltaMinutes < 5,
+      "IMMEDIATE: Revoke all sessions for this user. Rotate credentials. Check audit logs for data access.",
+    TimeDeltaMinutes < 15,
+      "HIGH: Confirm with user whether travel is legitimate. If not, revoke sessions and investigate.",
+      "MEDIUM: Verify with user. Could be VPN reconnect or travel edge case. Check AppIds for high-value targets."
+  )
+// -----------------------------------------------------------------------
+// Join back to get sample sign-in details for triage context
+// -----------------------------------------------------------------------
+| join kind=leftouter (
+    SigninLogs
+    | where TimeGenerated > ago(lookbackWindow)
+    | where ResultType == "0"
+    | summarize
+        SampleIPs       = make_set(IPAddress, 4),
+        SampleLocations = make_set(Location, 4),
+        AppNames        = make_set(AppDisplayName, 3)
+      by UserPrincipalName
+) on UserPrincipalName
+// -----------------------------------------------------------------------
+// Final analyst-facing projection
+// -----------------------------------------------------------------------
+| project
+    FirstAuth,
+    LastAuth,
+    TimeDeltaMinutes,
+    UserPrincipalName,
+    AppDisplayName,
+    Locations,
+    IPs,
+    SessionIds,
+    EventCount,
+    Severity,
+    Alert,
+    Triage,
+    CampaignHint,
+    SampleIPs,
+    SampleLocations
+| order by TimeDeltaMinutes asc, Severity asc
+
+// ============================================================================
+// COMPANION QUERY A — Cross-module: ProxyGuard URL masking + impossible travel
+// Correlates Wave 1 Plan A (URL_USERINFO_MASKING) with post-compromise sign-in.
+// Chains browser-layer detection to identity-layer confirmation.
+// ============================================================================
+//
+// ProxyPhishingEvents_CL
+// | where TimeGenerated > ago(24h)
+// | where EventType_s == "URL_USERINFO_MASKING"
+// | extend ClientIp = tostring(parse_json(EventData_s).clientIp)
+// | join kind=inner (
+//     SigninLogs
+//     | where TimeGenerated > ago(24h)
+//     | where ResultType == "0"
+//     | summarize
+//         Locations  = make_set(Location, 5),
+//         SigninIPs  = make_set(IPAddress, 5),
+//         FirstAuth  = min(TimeGenerated)
+//       by UserPrincipalName, IPAddress
+// ) on $left.ClientIp == $right.IPAddress
+// | where array_length(Locations) > 1
+// | project
+//     DetectedAt         = TimeGenerated,
+//     MaskingUrl         = tostring(parse_json(EventData_s).destinationUrl),
+//     DisplayedAs        = tostring(parse_json(EventData_s).displayedAs),
+//     ActualHost         = tostring(parse_json(EventData_s).actualHost),
+//     UserPrincipalName,
+//     Locations,
+//     SigninIPs,
+//     Alert = "Starkiller URL masking (ProxyGuard) + impossible travel (SigninLogs) — confirmed AiTM"
+
+// ============================================================================
+// COMPANION QUERY B — BrowserPhishingTelemetry + impossible travel
+// If PhishOps extension is deployed, correlate BLOB_URL_CREDENTIAL_PAGE events
+// with subsequent impossible-geography sign-ins for the same user.
+// ============================================================================
+//
+// BrowserPhishingTelemetry_CL
+// | where TimeGenerated > ago(24h)
+// | where EventType_s == "BLOB_URL_CREDENTIAL_PAGE"
+// | extend PageTitle = tostring(parse_json(EventData_s).pageTitle)
+// | join kind=inner (
+//     SigninLogs
+//     | where TimeGenerated > ago(24h)
+//     | where ResultType == "0"
+//     | summarize
+//         Locations = make_set(Location, 5),
+//         FirstAuth = min(TimeGenerated)
+//       by UserPrincipalName
+//     | where array_length(Locations) > 1
+// ) on $left.UserId == $right.UserPrincipalName
+// | project
+//     BlobDetectedAt = TimeGenerated,
+//     PageTitle,
+//     UserPrincipalName,
+//     Locations,
+//     Alert = "HTML smuggling (blob: page) + impossible travel — full kill chain confirmed"

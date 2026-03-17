@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishOps Demo: WebRTCGuard Virtual Camera Detection</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0A0907;
+      color: #D4CCBC;
+      font-family: 'Work Sans', system-ui, -apple-system, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      border-bottom: 2px solid #2A2520;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    h1 { color: #D4CCBC; font-size: 20px; font-weight: 600; text-transform: lowercase; }
+    .badge {
+      display: inline-block;
+      background: #BF1B1B;
+      color: #F5F0E8;
+      font-size: 11px;
+      padding: 2px 8px;
+      margin-left: 8px;
+      vertical-align: middle;
+      text-transform: lowercase;
+    }
+    .threat-card {
+      background: #141210;
+      border: 1px solid #2A2520;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .threat-card h2 { color: #D4861A; font-size: 15px; margin-bottom: 8px; font-weight: 600; }
+    .threat-card p { color: #8C7A5C; font-size: 13px; line-height: 1.6; }
+    .safe-notice {
+      background: rgba(212,134,26,0.08);
+      border: 1px solid #2A2520;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: #D4861A;
+    }
+    .demo-container {
+      background: #141210;
+      border: 2px solid #2A2520;
+      padding: 24px;
+      margin: 20px 0;
+    }
+    button.demo-btn {
+      background: #BF1B1B;
+      color: #F5F0E8;
+      border: none;
+      padding: 10px 24px;
+      cursor: pointer;
+      font-family: 'Work Sans', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.15s;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    button.demo-btn:hover { background: #A31717; }
+    button.demo-btn.safe {
+      background: transparent;
+      border: 1px solid #3A6B1C;
+      color: #3A6B1C;
+    }
+    button.demo-btn.safe:hover { background: rgba(58,107,28,0.1); }
+    .attack-flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      background: #1E1B18;
+      border: 1px solid #2A2520;
+      padding: 8px 14px;
+      font-size: 12px;
+    }
+    .flow-arrow { color: #4A4540; font-size: 18px; }
+    .flow-step.active { border-color: #BF1B1B; color: #BF1B1B; }
+    .log {
+      background: #0F0D0B;
+      border: 1px solid #2A2520;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #3A6B1C;
+      margin-top: 16px;
+    }
+    .signal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .signal-item {
+      background: rgba(212,204,188,0.03);
+      padding: 10px 12px;
+    }
+    .signal-item .name { font-size: 11px; color: #D4861A; font-family: monospace; }
+    .signal-item .weight { font-size: 18px; font-weight: 700; color: #BF1B1B; }
+    .signal-item .desc { font-size: 11px; color: #6B6560; margin-top: 2px; }
+    code { color: #BF1B1B; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>phishops demo <span class="badge">safe simulation</span></h1>
+    <p style="color:#6B6560; margin-top:4px; font-size:13px;">virtual camera detection &mdash; webrtc device label + timing analysis</p>
+  </div>
+
+  <div class="safe-notice">
+    This demo simulates virtual camera detection by calling the signal analysis
+    functions directly with mock device descriptors. No real cameras or WebRTC
+    streams are involved. The WebRTCGuard detects virtual camera device labels
+    and suspicious timing characteristics.
+  </div>
+
+  <div class="threat-card">
+    <h2>attack chain: deepfake video injection</h2>
+    <p>
+      Attackers inject real-time deepfake video into WebRTC streams via virtual camera
+      software (OBS Virtual Camera, VCAMSX, Camo, ManyCam). Combined with AI voice cloning
+      (ElevenLabs, Resemble AI), the attacker impersonates executives on video calls to
+      request wire transfers or credential disclosure. Hong Kong CFO deepfake: $25M loss
+      (Jan 2024). Scattered Spider/UNC3944 confirmed using AI voice + video impersonation.
+    </p>
+
+    <div class="attack-flow">
+      <div class="flow-step">deepfake model</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">virtual camera</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">getUserMedia()</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">victim sees fake video</div>
+    </div>
+  </div>
+
+  <div class="demo-container">
+    <h3 style="color:#D4CCBC; margin-bottom:12px; font-weight:600;">simulate virtual camera detection</h3>
+    <p style="color:#6B6560; font-size:12px; margin-bottom:16px;">
+      Click to simulate device enumeration with various camera configurations
+      and analyze detection signals.
+    </p>
+
+    <button class="demo-btn" id="btn-obs">obs virtual camera</button>
+    <button class="demo-btn" id="btn-timing">fast timing + low jitter</button>
+    <button class="demo-btn" id="btn-combined">combined signals</button>
+    <button class="demo-btn safe" id="btn-physical">physical camera (should pass)</button>
+
+    <div class="log" id="log">Click a button to run a simulation...</div>
+  </div>
+
+  <div class="threat-card">
+    <h2>detection signals</h2>
+    <div class="signal-grid">
+      <div class="signal-item">
+        <div class="name">virtual_camera_label</div>
+        <div class="weight">+0.45</div>
+        <div class="desc">Device label matches known virtual camera patterns</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">fast_constraint_response</div>
+        <div class="weight">+0.30</div>
+        <div class="desc">applyConstraints resolves in &lt;15ms (physical: 50-200ms)</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">arbitrary_resolution</div>
+        <div class="weight">+0.20</div>
+        <div class="desc">Continuous resolution range vs discrete hardware steps</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">low_frame_jitter</div>
+        <div class="weight">+0.25</div>
+        <div class="desc">Frame timing stddev &lt;0.5ms (physical: sensor noise jitter)</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">no_user_gesture</div>
+        <div class="weight">+0.25</div>
+        <div class="desc">getUserMedia called without recent user interaction</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">suspicious_page_context</div>
+        <div class="weight">+0.20</div>
+        <div class="desc">Page contains identity verification text on non-platform</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      checkVirtualCameraSignals,
+      checkWebRTCPageContext,
+      calculateWebRTCRiskScore,
+      _setLastGestureTimestamp,
+    } from '../content/webrtc_guard.js';
+
+    const logEl = document.getElementById('log');
+
+    function log(msg) {
+      const time = new Date().toISOString().split('T')[1].split('.')[0];
+      logEl.textContent += `\n[${time}] ${msg}`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    document.getElementById('btn-obs').addEventListener('click', () => {
+      log('--- OBS Virtual Camera simulation ---');
+      log('');
+
+      _setLastGestureTimestamp(Date.now()); // Demo click counts as gesture
+
+      const devices = [
+        { kind: 'videoinput', label: 'OBS Virtual Camera', deviceId: 'obs-001' },
+      ];
+
+      const cameraSignals = checkVirtualCameraSignals(devices);
+      const pageSignals = checkWebRTCPageContext();
+      const allSignals = [...cameraSignals, ...pageSignals];
+      const { riskScore, signalList } = calculateWebRTCRiskScore(allSignals);
+
+      log(`Camera signals: ${cameraSignals.map(s => s.id).join(', ') || 'none'}`);
+      log(`Page signals: ${pageSignals.map(s => s.id).join(', ') || 'none'}`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${riskScore >= 0.70 ? 'HIGH RISK' : riskScore >= 0.50 ? 'ALERT' : 'PASS'}`);
+      log(`Signals: ${signalList.join(', ')}`);
+      log('');
+    });
+
+    document.getElementById('btn-timing').addEventListener('click', () => {
+      log('--- Fast timing + low jitter simulation ---');
+      log('');
+
+      _setLastGestureTimestamp(Date.now());
+
+      const devices = [
+        { kind: 'videoinput', label: 'Unknown Camera', deviceId: 'unk-001' },
+      ];
+      const streamInfo = {
+        constraintResponseMs: 3,
+        frameJitterStddev: 0.15,
+        arbitraryResolution: true,
+      };
+
+      const cameraSignals = checkVirtualCameraSignals(devices, streamInfo);
+      const pageSignals = checkWebRTCPageContext();
+      const allSignals = [...cameraSignals, ...pageSignals];
+      const { riskScore, signalList } = calculateWebRTCRiskScore(allSignals);
+
+      log(`Camera signals: ${cameraSignals.map(s => s.id).join(', ') || 'none'}`);
+      log(`Timing: constraint=${streamInfo.constraintResponseMs}ms, jitter=${streamInfo.frameJitterStddev}ms`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${riskScore >= 0.70 ? 'HIGH RISK' : riskScore >= 0.50 ? 'ALERT' : 'PASS'}`);
+      log(`Signals: ${signalList.join(', ')}`);
+      log('');
+    });
+
+    document.getElementById('btn-combined').addEventListener('click', () => {
+      log('--- Combined signals (worst case) ---');
+      log('');
+
+      _setLastGestureTimestamp(0); // No gesture
+
+      const devices = [
+        { kind: 'videoinput', label: 'ManyCam Virtual Webcam', deviceId: 'mc-001' },
+      ];
+      const streamInfo = {
+        constraintResponseMs: 2,
+        frameJitterStddev: 0.1,
+        arbitraryResolution: true,
+      };
+
+      const cameraSignals = checkVirtualCameraSignals(devices, streamInfo);
+      const pageSignals = checkWebRTCPageContext();
+      const allSignals = [...cameraSignals, ...pageSignals];
+      const { riskScore, signalList } = calculateWebRTCRiskScore(allSignals);
+
+      log(`Camera signals: ${cameraSignals.map(s => s.id).join(', ') || 'none'}`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${riskScore >= 0.70 ? 'HIGH RISK' : riskScore >= 0.50 ? 'ALERT' : 'PASS'}`);
+      log(`Signals: ${signalList.join(', ')}`);
+      log('');
+    });
+
+    document.getElementById('btn-physical').addEventListener('click', () => {
+      log('--- Physical camera (benign) ---');
+      log('');
+
+      _setLastGestureTimestamp(Date.now());
+
+      const devices = [
+        { kind: 'videoinput', label: 'FaceTime HD Camera (Built-in)', deviceId: 'phys-001' },
+      ];
+      const streamInfo = {
+        constraintResponseMs: 85,
+        frameJitterStddev: 2.3,
+        arbitraryResolution: false,
+      };
+
+      const cameraSignals = checkVirtualCameraSignals(devices, streamInfo);
+      const pageSignals = checkWebRTCPageContext();
+      const allSignals = [...cameraSignals, ...pageSignals];
+      const { riskScore, signalList } = calculateWebRTCRiskScore(allSignals);
+
+      log(`Camera signals: ${cameraSignals.map(s => s.id).join(', ') || 'none'}`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${riskScore >= 0.70 ? 'HIGH RISK' : riskScore >= 0.50 ? 'ALERT' : 'PASS'}`);
+      log('');
+    });
+  </script>
+</body>
+</html>

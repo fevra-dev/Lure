@@ -1,0 +1,72 @@
+{
+  "manifest_version": 3,
+  "name": "PhishOps Security Suite",
+  "version": "0.2.0",
+  "description": "Browser-native phishing defence: ClickFix detection, OAuth scope analysis, extension integrity monitoring, HTML smuggling terminal page detection.",
+
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "management",
+    "webRequest",
+    "webNavigation"
+  ],
+
+  "host_permissions": [
+    "<all_urls>"
+  ],
+
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/clipboard-defender.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/oauth-guard.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["agentintentguard/content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["dataegress/blob_credential_detector.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16":  "icons/icon16.png",
+      "48":  "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none';"
+  },
+
+  "_comments": {
+    "webNavigation": "Required for Wave 2 Plan C: chrome.webNavigation.onCommitted listener in dataegress/background.js detects blob: URL navigations. blob: scheme cannot be matched in content_scripts[].matches — programmatic injection via chrome.scripting.executeScript is the only supported approach.",
+    "scripting": "Required to call chrome.scripting.executeScript() from dataegress/background.js to inject blob_credential_detector.js into blob: frames.",
+    "webRequest": "Required for Wave 1 Plan B: OAuthGuard state parameter abuse detection in background/service-worker.js.",
+    "web_accessible_resources": "blob_credential_detector.js must be declared as web-accessible so chrome.scripting.executeScript can inject it into blob: frames. The files[] form of executeScript references the extension file path, which requires this declaration."
+  }
+}

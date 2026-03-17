@@ -1,0 +1,2 @@
+[console_scripts]
+lure = lure.cli:app

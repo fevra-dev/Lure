@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishOps Demo: Malicious OAuth Consent</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0A0907;
+      color: #D4CCBC;
+      font-family: 'Work Sans', system-ui, -apple-system, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      border-bottom: 2px solid #2A2520;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    h1 { color: #D4CCBC; font-size: 20px; font-weight: 600; text-transform: lowercase; }
+    .badge {
+      display: inline-block;
+      background: #BF1B1B;
+      color: #F5F0E8;
+      font-size: 11px;
+      padding: 2px 8px;
+      margin-left: 8px;
+      vertical-align: middle;
+      text-transform: lowercase;
+    }
+    .threat-card {
+      background: #141210;
+      border: 1px solid #2A2520;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .threat-card h2 { color: #D4861A; font-size: 15px; margin-bottom: 8px; font-weight: 600; }
+    .threat-card p { color: #8C7A5C; font-size: 13px; line-height: 1.6; }
+    .safe-notice {
+      background: rgba(212,134,26,0.08);
+      border: 1px solid #2A2520;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: #D4861A;
+    }
+    .demo-container {
+      background: #141210;
+      border: 2px solid #2A2520;
+      padding: 24px;
+      margin: 20px 0;
+    }
+    .url-display {
+      background: #0F0D0B;
+      border: 1px solid #2A2520;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 11px;
+      word-break: break-all;
+      margin: 12px 0;
+    }
+    .url-display .param { color: #BF1B1B; font-weight: bold; }
+    .url-display .safe { color: #3A6B1C; }
+    .url-display .domain { color: #D4861A; }
+    .signal-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    .signal-table th {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid #2A2520;
+      color: #6B6560;
+      font-size: 11px;
+      text-transform: lowercase;
+    }
+    .signal-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #1E1B18;
+      font-size: 13px;
+    }
+    .signal-table td:first-child { font-family: monospace; color: #D4861A; }
+    button.demo-btn {
+      background: #1E1B18;
+      color: #D4CCBC;
+      border: 1px solid #2A2520;
+      padding: 10px 24px;
+      cursor: pointer;
+      font-family: 'Work Sans', system-ui, sans-serif;
+      font-size: 13px;
+      margin-right: 8px;
+      transition: all 0.15s;
+    }
+    button.demo-btn:hover { background: #2A2520; border-color: #D4861A; }
+    .log {
+      background: #0F0D0B;
+      border: 1px solid #2A2520;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #3A6B1C;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>phishops demo <span class="badge">safe simulation</span></h1>
+    <p style="color:#6B6560; margin-top:4px; font-size:13px;">malicious oauth consent &mdash; state parameter email encoding</p>
+  </div>
+
+  <div class="safe-notice">
+    This demo simulates the detection logic locally. No real OAuth requests are made.
+    The URLs shown are analyzed by the state parameter abuse detector.
+  </div>
+
+  <div class="threat-card">
+    <h2>threat: storm-2372 state parameter abuse</h2>
+    <p>
+      Attackers craft OAuth authorization URLs where the <code>state</code> parameter contains
+      the victim's email address encoded in base64. When the victim authenticates, the
+      OAuth callback delivers the token <em>and</em> the decoded email to the attacker's
+      <code>redirect_uri</code> &mdash; a clean C2 exfiltration channel riding legitimate
+      OAuth infrastructure.
+    </p>
+    <p style="margin-top:8px;">
+      PhishOps OAuthGuard intercepts these URLs in <code>webRequest.onBeforeRequest</code>
+      and decodes the state parameter to check for embedded email addresses.
+    </p>
+  </div>
+
+  <div class="demo-container">
+    <h3 style="color:#D4CCBC; margin-bottom:12px; font-weight:600;">simulated oauth urls</h3>
+
+    <div>
+      <strong style="color:#BF1B1B; font-size:12px;">malicious — base64 encoded email in state:</strong>
+      <div class="url-display">
+        https://<span class="domain">login.microsoftonline.com</span>/common/oauth2/authorize?client_id=04b07795-8ddb-461a-bbee-02f9e1bf7b46&amp;response_type=code&amp;redirect_uri=https://attacker.com/callback&amp;state=<span class="param">dmljdGltQGNvcnAuY29t</span>&amp;scope=openid+profile+email
+      </div>
+      <div style="font-size:11px; color:#6B6560;">
+        state decoded: <code style="color:#BF1B1B;">victim@corp.com</code> (base64)
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <strong style="color:#3A6B1C; font-size:12px;">clean — standard CSRF nonce in state:</strong>
+      <div class="url-display">
+        https://<span class="domain">login.microsoftonline.com</span>/common/oauth2/authorize?client_id=abc123&amp;response_type=code&amp;state=<span class="safe">f4a3c2b1d9e8a7f6</span>&amp;scope=openid
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <button class="demo-btn" id="btn-malicious">analyze malicious url</button>
+      <button class="demo-btn" id="btn-clean">analyze clean url</button>
+      <button class="demo-btn" id="btn-hex">analyze hex-encoded</button>
+    </div>
+
+    <div class="log" id="log">Click a button to run the detector...</div>
+  </div>
+
+  <div class="threat-card">
+    <h2>detection signals</h2>
+    <table class="signal-table">
+      <tr><th>signal</th><th>description</th><th>score</th></tr>
+      <tr><td>email_in_state_param</td><td>Decoded email found in state parameter</td><td>0.85</td></tr>
+      <tr><td>encoding:base64</td><td>State value was base64 encoded</td><td>&mdash;</td></tr>
+      <tr><td>encoding:hex</td><td>State value was hex encoded</td><td>&mdash;</td></tr>
+      <tr><td>oauth_endpoint:*</td><td>Detected on known OAuth provider</td><td>&mdash;</td></tr>
+    </table>
+  </div>
+
+  <script type="module">
+    // Import the detector directly for demo purposes
+    import { detectStateParameterAbuse } from '../content/state_parameter_abuse.js';
+
+    const logEl = document.getElementById('log');
+
+    function log(msg) {
+      const time = new Date().toISOString().split('T')[1].split('.')[0];
+      logEl.textContent += `\n[${time}] ${msg}`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function analyzeUrl(label, url) {
+      log(`--- Analyzing: ${label} ---`);
+      log(`URL: ${url.substring(0, 120)}...`);
+
+      const result = detectStateParameterAbuse(url);
+
+      log(`detected: ${result.detected}`);
+      if (result.detected) {
+        log(`  email: ${result.decodedEmail}`);
+        log(`  encoding: ${result.encodingMethod}`);
+        log(`  riskScore: ${result.riskScore}`);
+      }
+      log(`signals: [${result.signals.join(', ')}]`);
+      log('');
+    }
+
+    document.getElementById('btn-malicious').addEventListener('click', () => {
+      analyzeUrl('Malicious (base64)',
+        'https://login.microsoftonline.com/common/oauth2/authorize?client_id=04b07795-8ddb-461a-bbee-02f9e1bf7b46&response_type=code&redirect_uri=https://attacker.com/callback&state=dmljdGltQGNvcnAuY29t&scope=openid+profile+email'
+      );
+    });
+
+    document.getElementById('btn-clean').addEventListener('click', () => {
+      analyzeUrl('Clean (CSRF nonce)',
+        'https://login.microsoftonline.com/common/oauth2/authorize?client_id=abc123&response_type=code&state=f4a3c2b1d9e8a7f6&scope=openid'
+      );
+    });
+
+    document.getElementById('btn-hex').addEventListener('click', () => {
+      // Hex encode "admin@target.org"
+      const hex = Array.from('admin@target.org').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+      analyzeUrl('Malicious (hex)',
+        `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?state=${hex}&client_id=abc&response_type=code`
+      );
+    });
+  </script>
+</body>
+</html>

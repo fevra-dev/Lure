@@ -1,0 +1,185 @@
+Metadata-Version: 2.4
+Name: lure
+Version: 1.0.0
+Summary: Phishing Analysis & IOC Extraction Platform for L1/L2 SOC Analysts
+License: MIT
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: mail-parser>=3.15
+Requires-Dist: extract-msg>=0.48
+Requires-Dist: pyspf>=2.0
+Requires-Dist: dkimpy>=1.1
+Requires-Dist: checkdmarc>=5.0
+Requires-Dist: dnspython>=2.4
+Requires-Dist: iocextract>=1.16
+Requires-Dist: iocsearcher>=0.5
+Requires-Dist: ioc-fanger>=1.2
+Requires-Dist: beautifulsoup4>=4.12
+Requires-Dist: pdfplumber>=0.10
+Requires-Dist: python-docx>=1.1
+Requires-Dist: oletools[full]>=0.60
+Requires-Dist: urlextract>=1.8
+Requires-Dist: tldextract>=5.1
+Requires-Dist: pydantic>=2.5
+Requires-Dist: pydantic-settings>=2.1
+Requires-Dist: python-dotenv>=1.0
+Requires-Dist: typer>=0.9
+Requires-Dist: rich>=13.7
+Requires-Dist: aiohttp>=3.9
+Requires-Dist: httpx>=0.26
+Requires-Dist: requests>=2.31
+Requires-Dist: python-magic>=0.4
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23; extra == "dev"
+Requires-Dist: pytest-httpx>=0.28; extra == "dev"
+Requires-Dist: responses>=0.24; extra == "dev"
+Provides-Extra: yara
+Requires-Dist: yara-python>=4.5; extra == "yara"
+Requires-Dist: yara-mail>=1.3; extra == "yara"
+Provides-Extra: archive
+Requires-Dist: py7zr>=0.21; extra == "archive"
+Requires-Dist: rarfile>=4.1; extra == "archive"
+Provides-Extra: enrichment
+Requires-Dist: vt-py>=0.18; extra == "enrichment"
+Requires-Dist: shodan>=1.31; extra == "enrichment"
+Requires-Dist: OTXv2>=1.5; extra == "enrichment"
+Requires-Dist: ipwhois>=1.2; extra == "enrichment"
+Requires-Dist: python-whois>=0.9; extra == "enrichment"
+Provides-Extra: output
+Requires-Dist: stix2>=3.0; extra == "output"
+Requires-Dist: pymisp>=2.4; extra == "output"
+Requires-Dist: thehive4py>=1.8; extra == "output"
+Requires-Dist: weasyprint>=61; extra == "output"
+Requires-Dist: jinja2>=3.1; extra == "output"
+Provides-Extra: llm
+Requires-Dist: instructor>=0.6; extra == "llm"
+Requires-Dist: ollama>=0.1; extra == "llm"
+Provides-Extra: all
+Requires-Dist: lure[archive,dev,enrichment,llm,output,yara]; extra == "all"
+
+# 🎣 Lure — Phishing Analysis & IOC Extraction Platform
+
+**Fevra Security Portfolio · v1.0.0 · February 2026**
+
+Lure compresses the 15–45 minute manual L1/L2 SOC email triage workflow into a sub-90-second automated analysis with a complete, structured verdict report.
+
+---
+
+## Pipeline
+
+```
+.eml / .msg
+    │
+    ▼  A: parser.py        — SPF · DKIM · DMARC · Received chain · Reply-To
+    ▼  B: extractor.py     — URLs · IPs · Domains · Hashes · Attachments
+    ▼  C: scanner.py       — YARA attachment scanning (Phase 2)
+    ▼  D: enricher.py      — VirusTotal · AbuseIPDB · Shodan · urlscan.io (Phase 3)
+    ▼  E: scorer.py        — Weighted signal engine → CLEAN / SUSPICIOUS / PHISHING (Phase 4)
+    ▼  F: reporter.py      — JSON · HTML · STIX 2.1 · TheHive · MISP (Phase 4+)
+```
+
+## Phase 1 Status: ✅ Complete
+
+- [x] Email parsing: `.eml` (RFC 5322) and `.msg` (OLE Compound)
+- [x] Header forensics: SPF, DKIM, DMARC validation
+- [x] Received chain walking to find true originating IP
+- [x] Reply-To mismatch detection
+- [x] Homograph domain detection (Unicode mixed-script)
+- [x] IOC extraction: URLs, IPs, domains, hashes, emails, crypto wallets
+- [x] Defanged IOC handling (`hxxps://`, `[.]`, `(dot)` etc.)
+- [x] HTML body extraction from `href`/`src` attributes (avoids anchor text trap)
+- [x] Attachment static analysis: VBA macros (olevba), PDF elements (pdfid)
+- [x] Multi-hop redirect chain following
+- [x] Pydantic v2 data models throughout
+- [x] Typer CLI with Rich terminal output
+- [x] Full pytest test suite (no API keys required)
+
+## Quick Start
+
+```bash
+# Install dependencies
+pip install -e ".[dev]"
+
+# Copy and fill in API keys
+cp .env.example .env
+
+# Analyze an email
+lure analyze suspicious_email.eml
+
+# Analyze with JSON output
+lure analyze suspicious_email.eml --format json
+
+# Run tests (no API keys needed)
+pytest tests/ -v
+
+# Validate configuration
+lure config validate
+```
+
+## Example Output
+
+```
+╭─────────────────────────────────────────────╮
+│ 🎣 Lure — Phishing Analysis                 │
+│ Analyzing: invoice_urgent.eml               │
+╰─────────────────────────────────────────────╯
+
+┌─────────────────────────────────────────────┐
+│ 🚨  CONFIRMED_MALICIOUS   Score: 9.5        │
+└─────────────────────────────────────────────┘
+
+📧 Header Analysis
+  From          security@paypa1.com
+  Subject       Urgent: Verify Your Account
+  Originating IP 185.220.101.45
+  SPF           FAIL ✗
+  DKIM          NONE
+  DMARC         FAIL ✗
+  Received hops 2
+  Reply-To ⚠    attacker@protonmail.com (≠ From domain)
+
+⚠ Anomalies detected:
+  • Reply-To domain 'protonmail.com' differs from From domain 'paypa1.com'
+  • Homograph domain detected: 'paypa1.com' contains mixed Unicode scripts
+
+🔍 IOCs Extracted (14 total)
+  IPs: 185.220.101.45
+  Domains: paypa1.com, protonmail.com, evil-cdn.xyz
+  URLs: 3 extracted
+  Hashes: 1
+
+📎 Attachments (1)
+  ⚠ invoice.zip
+    ⚠ Nested archive: invoice.zip/invoice.doc
+```
+
+## API Keys
+
+All enrichment APIs have free tiers. See `.env.example` for links and rate limits.
+
+| Service | Free Tier | Required for |
+|---|---|---|
+| VirusTotal | 4 req/min | URL/hash reputation |
+| AbuseIPDB | 1000/day | IP reputation |
+| Shodan | 100/month | IP infrastructure context |
+| urlscan.io | 1000/day | DOM-level phishing detection |
+| AlienVault OTX | Unlimited | Community threat intel |
+
+Lure gracefully skips any enrichment source whose key is absent — never crashes.
+
+## Phase Roadmap
+
+| Phase | Status | Deliverable |
+|---|---|---|
+| 1: Foundation + Parser + Extractor | ✅ Complete | Header forensics + IOC extraction |
+| 2: YARA Scanner | 🔜 Next | Attachment malware detection |
+| 3: Enrichment Layer | 📅 Weeks 5-6 | VT + AbuseIPDB + Shodan + urlscan |
+| 4: Scoring + SOC Integration | 📅 Weeks 7-8 | Verdict engine + TheHive + MISP |
+| 5: LLM + MCP Server | 📅 Weeks 9-10 | AI verdicts + Claude Code integration |
+
+## Security Notes
+
+- **Ollama**: Bind to `127.0.0.1` only. Set `OLLAMA_HOST=127.0.0.1` — 1,100+ Ollama servers were exposed publicly (Cisco Talos, Sept 2025).
+- **API keys**: Store only in `.env`, never in code or git history.
+- **Attachments**: Lure performs static analysis only — never executes attachment content.

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishOps Demo: ClickFix Clipboard Injection</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0A0907;
+      color: #D4CCBC;
+      font-family: 'Work Sans', system-ui, -apple-system, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      border-bottom: 2px solid #2A2520;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    h1 { color: #D4CCBC; font-size: 20px; font-weight: 600; text-transform: lowercase; }
+    .badge {
+      display: inline-block;
+      background: #BF1B1B;
+      color: #F5F0E8;
+      font-size: 11px;
+      padding: 2px 8px;
+      margin-left: 8px;
+      vertical-align: middle;
+      text-transform: lowercase;
+    }
+    .threat-card {
+      background: #141210;
+      border: 1px solid #2A2520;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .threat-card h2 {
+      color: #D4861A;
+      font-size: 15px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .threat-card p { color: #8C7A5C; font-size: 13px; line-height: 1.6; }
+    .attack-simulation {
+      background: #141210;
+      border: 2px solid #2A2520;
+      padding: 24px;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .attack-simulation h3 {
+      color: #D4CCBC;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .fake-captcha {
+      background: #f2f2f2;
+      border: 1px solid #ddd;
+      padding: 20px;
+      max-width: 320px;
+      margin: 0 auto 16px;
+      color: #333;
+    }
+    .fake-captcha .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .fake-captcha .checkbox {
+      width: 24px;
+      height: 24px;
+      border: 2px solid #c1c1c1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .fake-captcha .instructions {
+      background: #e8e8e8;
+      padding: 12px;
+      font-size: 12px;
+      color: #555;
+      text-align: left;
+    }
+    .fake-captcha .instructions code {
+      background: #d0d0d0;
+      padding: 2px 6px;
+      font-family: monospace;
+    }
+    button.trigger-btn {
+      background: #BF1B1B;
+      color: #F5F0E8;
+      border: none;
+      padding: 10px 24px;
+      cursor: pointer;
+      font-family: 'Work Sans', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    button.trigger-btn:hover { background: #A31717; }
+    .log {
+      background: #0F0D0B;
+      border: 1px solid #2A2520;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #3A6B1C;
+    }
+    .safe-notice {
+      background: rgba(212,134,26,0.08);
+      border: 1px solid #2A2520;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: #D4861A;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>phishops demo <span class="badge">safe simulation</span></h1>
+    <p style="color:#6B6560; margin-top:4px; font-size:13px;">clickfix clipboard injection attack</p>
+  </div>
+
+  <div class="safe-notice">
+    This is a safe demonstration. No malicious code is executed. The clipboard payload
+    is a harmless <code>echo</code> command that proves the injection vector works.
+  </div>
+
+  <div class="threat-card">
+    <h2>threat background</h2>
+    <p>
+      <strong>ClickFix</strong> is a social engineering technique where attackers present
+      a fake CAPTCHA or "verification" dialog that instructs users to:
+    </p>
+    <p style="margin-top:8px;">
+      1. Press <code>Win+R</code> to open the Run dialog<br>
+      2. Press <code>Ctrl+V</code> to paste<br>
+      3. Press <code>Enter</code> to "verify"
+    </p>
+    <p style="margin-top:8px;">
+      Behind the scenes, the page has silently copied a malicious PowerShell command to the
+      clipboard. The user unknowingly executes malware. PhishOps detects this by monitoring
+      clipboard write operations on pages that match phishing heuristics.
+    </p>
+  </div>
+
+  <div class="attack-simulation">
+    <h3>simulated attack page</h3>
+    <div class="fake-captcha">
+      <div class="checkbox-row">
+        <div class="checkbox" id="fake-check"></div>
+        <span style="font-size:14px;">I'm not a robot</span>
+      </div>
+      <div class="instructions">
+        <strong>Verification Steps:</strong><br>
+        1. Press <code>Win+R</code> to open Run<br>
+        2. Press <code>Ctrl+V</code> to paste verification code<br>
+        3. Press <code>Enter</code> to complete
+      </div>
+    </div>
+    <button class="trigger-btn" id="trigger-btn">simulate clipboard injection</button>
+  </div>
+
+  <div style="margin-top:20px;">
+    <h3 style="color:#6B6560; font-size:13px; margin-bottom:8px; text-transform:lowercase;">detection log</h3>
+    <div class="log" id="log">Waiting for simulation...</div>
+  </div>
+
+  <script>
+    const logEl = document.getElementById('log');
+    const triggerBtn = document.getElementById('trigger-btn');
+    const fakeCheck = document.getElementById('fake-check');
+
+    function log(msg) {
+      const time = new Date().toISOString().split('T')[1].split('.')[0];
+      logEl.textContent += `\n[${time}] ${msg}`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Simulated harmless payload (NOT malicious — just proves the vector)
+    const SAFE_PAYLOAD = 'echo PhishOps ClickFix demo - this command is harmless';
+
+    fakeCheck.addEventListener('click', () => {
+      fakeCheck.textContent = '\u2713';
+      fakeCheck.style.background = '#3A6B1C';
+      fakeCheck.style.color = 'white';
+      fakeCheck.style.borderColor = '#3A6B1C';
+      log('User clicked fake CAPTCHA checkbox');
+    });
+
+    triggerBtn.addEventListener('click', async () => {
+      log('--- ClickFix simulation started ---');
+      log('Attacker page writing to clipboard...');
+
+      try {
+        await navigator.clipboard.writeText(SAFE_PAYLOAD);
+        log(`Clipboard now contains: "${SAFE_PAYLOAD}"`);
+        log('DETECTION: Clipboard write detected on suspicious page!');
+        log('PhishOps would block this and alert the SOC.');
+        log('Event: CLICKFIX_CLIPBOARD_INJECTION');
+        log('Severity: Critical');
+        log('--- Simulation complete ---');
+      } catch (err) {
+        log(`Clipboard API blocked (expected in file:// context): ${err.message}`);
+        log('In a real page served over HTTPS, the clipboard write succeeds silently.');
+        log('PhishOps intercepts the write before it reaches the clipboard.');
+      }
+    });
+  </script>
+</body>
+</html>
