@@ -302,6 +302,24 @@ const EVENT_CLASSIFICATION = {
     threatActor: 'Advanced phishing kits / watering-hole campaigns',
     description: 'Service Worker persistence on credential page — phishing form caching, fetch interception for credential relay, push re-engagement, or background sync C2 callback',
   },
+
+  // Wave 15: EtherHidingGuard
+  ETHERHIDING_PAYLOAD_DETECTED: {
+    category: 'malicious_code',
+    mitreAttack: 'T1059.007',
+    mitreName: 'Command and Scripting Interpreter: JavaScript',
+    threatActor: 'ClearFake / ClickFix / EtherHiding operators',
+    description: 'Blockchain-hosted phishing payload delivery — landing page retrieves malicious code from BSC/ETH smart contract via eth_call and injects into DOM',
+  },
+
+  // Wave 15: NotificationGuard
+  NOTIFICATION_PHISHING_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1204.001',
+    mitreName: 'User Execution: Malicious Link',
+    threatActor: 'Multiple (notification spam campaigns)',
+    description: 'Browser notification phishing — fake CAPTCHA/verification lure tricks user into granting notification permission for fake alerts and credential harvesting links',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -607,6 +625,22 @@ function getRecommendedActions(eventType, severity) {
       actions.push('If credentials were entered: force password reset for the affected user');
       actions.push('Block the phishing domain at DNS/web proxy');
       actions.push('Check push notification subscriptions for the domain and revoke them');
+      break;
+
+    case 'ETHERHIDING_PAYLOAD_DETECTED':
+      actions.push('Block the page domain at DNS/web proxy');
+      actions.push('Block the RPC gateway endpoint at network firewall if not business-required');
+      actions.push('Check if the injected payload harvested credentials or installed malware');
+      actions.push('Report the smart contract address to blockchain abuse databases (Chainabuse)');
+      actions.push('Search for the compromised WordPress site delivery URL in email/chat logs');
+      break;
+
+    case 'NOTIFICATION_PHISHING_DETECTED':
+      actions.push('Revoke notification permission for the domain in browser settings');
+      actions.push('Block the page domain at DNS/web proxy');
+      actions.push('Check if the user clicked any malicious notification links');
+      actions.push('If credential harvesting links were clicked: force password reset');
+      actions.push('Clear site data for the domain (cookies, storage, Service Workers)');
       break;
 
     default:

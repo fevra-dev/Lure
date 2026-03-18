@@ -280,6 +280,26 @@ export const PRIORITY_INTELLIGENCE_REQUIREMENTS = [
     status: 'active',
     quarterAdded: 'Q1-2026',
   },
+
+  // Wave 15: EtherHidingGuard + NotificationGuard
+  {
+    id: 'PIR-028',
+    question: 'Are threat actors using blockchain smart contracts (BSC/ETH) to host phishing payloads retrieved via eth_call, evading URL-based blocklists?',
+    detectors: ['ETHERHIDING_PAYLOAD_DETECTED'],
+    collectionSources: ['fetch/XHR proxy on RPC endpoints', 'MutationObserver for dynamic scripts', 'ABI response decoding'],
+    priority: 'high',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
+  {
+    id: 'PIR-029',
+    question: 'Are threat actors using browser push notification permission abuse to deliver fake security alerts and credential harvesting links?',
+    detectors: ['NOTIFICATION_PHISHING_DETECTED'],
+    collectionSources: ['Notification.requestPermission() proxy', 'Notification constructor proxy', 'gesture tracking', 'page text lure analysis'],
+    priority: 'high',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -382,6 +402,8 @@ export function correlateEvents(events) {
     new Set(['WEBSOCKET_CREDENTIAL_EXFIL_DETECTED', 'PROXY_AITM_DETECTED', 'CSS_CREDENTIAL_EXFIL_DETECTED']),
     new Set(['SERVICE_WORKER_PERSISTENCE_DETECTED', 'WEBSOCKET_CREDENTIAL_EXFIL_DETECTED', 'LLM_GENERATED_PHISHING_DETECTED']),
     new Set(['SERVICE_WORKER_PERSISTENCE_DETECTED', 'PWA_PHISHING_DETECTED', 'PHISHVISION_BRAND_IMPERSONATION']),
+    new Set(['ETHERHIDING_PAYLOAD_DETECTED', 'CRYPTO_DRAINER_DETECTED', 'CLICKFIX_CLIPBOARD_INJECTION']),
+    new Set(['NOTIFICATION_PHISHING_DETECTED', 'SERVICE_WORKER_PERSISTENCE_DETECTED', 'PHISHVISION_BRAND_IMPERSONATION']),
   ];
 
   for (let i = 0; i < events.length; i++) {

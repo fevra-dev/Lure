@@ -704,7 +704,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Wave 15: EtherHidingGuard events
+  if (message.type === 'ETHERHIDINGGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 15: NotificationGuard events
+  if (message.type === 'NOTIFGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
   return false;
 });
 
-console.debug('[PHISHOPS] Service worker loaded — all Wave 1–14 detectors active');
+console.debug('[PHISHOPS] Service worker loaded — all Wave 1–15 detectors active');
