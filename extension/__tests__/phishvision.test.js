@@ -14,6 +14,7 @@ import {
   checkTextToHtmlRatio,
   checkFaviconBrandMatch,
   checkColorPaletteMatch,
+  checkLOTLTrustedDomain,
   calculatePhishVisionRiskScore,
   injectPhishVisionWarningBanner,
 } from '../content/phishvision.js';
@@ -293,6 +294,128 @@ describe('checkColorPaletteMatch', () => {
 
   it('skips localhost', () => {
     expect(checkColorPaletteMatch(makeDoc(), 'localhost')).toHaveLength(0);
+  });
+});
+
+/* ================================================================== */
+/*  checkLOTLTrustedDomain                                             */
+/* ================================================================== */
+
+describe('checkLOTLTrustedDomain', () => {
+  it('detects Microsoft branding on Google Sites with credential fields', () => {
+    const doc = makeDoc(`
+      <html><head><title>Sign in to Microsoft</title></head>
+      <body><p>Microsoft account verification</p><input type="password"></body></html>
+    `);
+    const signals = checkLOTLTrustedDomain(doc, 'sites.google.com');
+    expect(signals).toHaveLength(1);
+    expect(signals[0].id).toBe('phishvision:lotl_trusted_domain_credential');
+    expect(signals[0].weight).toBe(0.30);
+    expect(signals[0].matchedBrand).toBe('microsoft');
+    expect(signals[0].hostingPlatform).toBe('sites.google.com');
+  });
+
+  it('detects PayPal branding on Notion with credential fields', () => {
+    const doc = makeDoc(`
+      <html><head><title>PayPal Login</title></head>
+      <body><p>PayPal account</p><input type="email"><input type="password"></body></html>
+    `);
+    const signals = checkLOTLTrustedDomain(doc, 'mypage.notion.site');
+    expect(signals).toHaveLength(1);
+    expect(signals[0].matchedBrand).toBe('paypal');
+    expect(signals[0].hostingPlatform).toBe('notion.site');
+  });
+
+  it('does NOT fire for Microsoft branding on SharePoint (same brand)', () => {
+    const doc = makeDoc(`
+      <html><head><title>Microsoft SharePoint</title></head>
+      <body><p>Microsoft Teams integration</p><input type="password"></body></html>
+    `);
+    const signals = checkLOTLTrustedDomain(doc, 'mycompany.sharepoint.com');
+    expect(signals).toHaveLength(0);
+  });
+
+  it('does NOT fire for Google branding on Google Sites (same brand)', () => {
+    const doc = makeDoc(`
+      <html><head><title>Google Workspace</title></head>
+      <body><p>Google account</p><input type="password"></body></html>
+    `);
+    const signals = checkLOTLTrustedDomain(doc, 'sites.google.com');
+    expect(signals).toHaveLength(0);
+  });
+
+  it('does NOT fire without credential fields', () => {
+    const doc = makeDoc(`
+      <html><head><title>Sign in to Microsoft</title></head>
+      <body><p>Microsoft brand mentions but no login form</p></body></html>
+    `);
+    const signals = checkLOTLTrustedDomain(doc, 'sites.google.com');
+    expect(signals).toHaveLength(0);
+  });
+
+  it('does NOT fire on non-LOTL domain', () => {
+    const doc = makeDoc(`
+      <html><head><title>Microsoft Login</title></head>
+      <body><p>Microsoft</p><input type="password"></body></html>
+    `);
+    const signals = checkLOTLTrustedDomain(doc, 'evil-phish.com');
+    expect(signals).toHaveLength(0);
+  });
+
+  it('fires for any brand on platform without own brand (e.g. Canva)', () => {
+    const doc = makeDoc(`
+      <html><head><title>Amazon Account</title></head>
+      <body><p>Amazon Prime verification</p><input type="password"></body></html>
+    `);
+    const signals = checkLOTLTrustedDomain(doc, 'mypage.canva.com');
+    expect(signals).toHaveLength(1);
+    expect(signals[0].matchedBrand).toBe('amazon');
+    expect(signals[0].hostingPlatform).toBe('canva.com');
+  });
+
+  it('detects brand via email field (not just password)', () => {
+    const doc = makeDoc(`
+      <html><head><title>Coinbase</title></head>
+      <body><p>Coinbase account</p><input type="email"></body></html>
+    `);
+    const signals = checkLOTLTrustedDomain(doc, 'test.wordpress.com');
+    expect(signals).toHaveLength(1);
+    expect(signals[0].matchedBrand).toBe('coinbase');
+  });
+
+  it('fires for non-Google brand on Google Docs subdomain', () => {
+    const doc = makeDoc(`
+      <html><head><title>Dropbox Sign In</title></head>
+      <body><p>Dropbox file sharing</p><input type="password"></body></html>
+    `);
+    const signals = checkLOTLTrustedDomain(doc, 'docs.google.com');
+    expect(signals).toHaveLength(1);
+    expect(signals[0].matchedBrand).toBe('dropbox');
+    expect(signals[0].hostingPlatform).toBe('docs.google.com');
+  });
+
+  it('fires for webflow.io hosted page', () => {
+    const doc = makeDoc(`
+      <html><head><title>Slack Login</title></head>
+      <body><p>Sign in to Slack</p><input type="password"></body></html>
+    `);
+    const signals = checkLOTLTrustedDomain(doc, 'fake-workspace.webflow.io');
+    expect(signals).toHaveLength(1);
+    expect(signals[0].matchedBrand).toBe('slack');
+  });
+
+  it('returns empty for null inputs', () => {
+    expect(checkLOTLTrustedDomain(null, 'sites.google.com')).toHaveLength(0);
+    expect(checkLOTLTrustedDomain(makeDoc(), null)).toHaveLength(0);
+  });
+
+  it('returns empty for page with credentials but no brand keywords', () => {
+    const doc = makeDoc(`
+      <html><head><title>My Page</title></head>
+      <body><p>Welcome to our site</p><input type="password"></body></html>
+    `);
+    const signals = checkLOTLTrustedDomain(doc, 'mysite.notion.site');
+    expect(signals).toHaveLength(0);
   });
 });
 

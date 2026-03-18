@@ -594,7 +594,95 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Wave 10: CTAPGuard events
+  if (message.type === 'CTAPGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 10: IPFSGuard events
+  if (message.type === 'IPFSGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 11: LLMScorer events
+  if (message.type === 'LLMSCORER_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 11: VNCGuard events
+  if (message.type === 'VNCGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 12: PWAGuard events
+  if (message.type === 'PWAGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 12: TPASentinel events
+  if (message.type === 'TPASENTINEL_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 13: DrainerGuard events
+  if (message.type === 'DRAINERGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 13: StyleAuditor events
+  if (message.type === 'STYLEAUDITOR_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
   return false;
 });
 
-console.debug('[PHISHOPS] Service worker loaded — all Wave 1–9 detectors active');
+console.debug('[PHISHOPS] Service worker loaded — all Wave 1–13 detectors active');

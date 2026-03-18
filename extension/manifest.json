@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PhishOps Security Suite",
   "version": "1.0.0",
-  "description": "Browser-native phishing defence: 25 detectors covering OAuth abuse, HTML smuggling, extension supply chain, clipboard injection, fullscreen overlay, passkey theft, QR session hijacking, virtual camera detection, TOAD screen share, brand impersonation, AiTM proxy detection, browser sync hijacking, helpdesk platform abuse, and agentic guardrails.",
+  "description": "Browser-native phishing defence: 34 detectors covering OAuth abuse, HTML smuggling, extension supply chain, clipboard injection, fullscreen overlay, passkey theft, QR session hijacking, virtual camera detection, TOAD screen share, brand impersonation, AiTM proxy detection, browser sync hijacking, helpdesk platform abuse, FIDO downgrade attacks, IPFS gateway phishing, LOTL trusted domain abuse, AI-generated phishing detection, EvilnoVNC WebSocket AiTM, and agentic guardrails.",
 
   "permissions": [
     "storage",
@@ -89,6 +89,46 @@
       "matches": ["<all_urls>"],
       "js": ["content/fakesender_shield.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/ctap_guard.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/ipfs_guard.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/llm_scorer.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/vnc_guard.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/pwa_guard.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/tpa_sentinel.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/drainer_guard.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/style_auditor.js"],
+      "run_at": "document_idle"
     }
   ],
 
@@ -130,7 +170,16 @@
       "wave8_phishvision": "Brand impersonation detection — content/phishvision.js",
       "wave8_proxyguard": "AiTM reverse proxy detection — content/proxy_guard.js + background/service-worker.js",
       "wave9_syncguard": "Browser sync hijacking detection — content/sync_guard.js",
-      "wave9_fakesender": "Helpdesk platform brand impersonation — content/fakesender_shield.js"
+      "wave9_fakesender": "Helpdesk platform brand impersonation — content/fakesender_shield.js",
+      "wave10_ctapguard": "FIDO downgrade detection (Safari/Windows UA spoof, platform mismatch) — content/ctap_guard.js",
+      "wave10_ipfsguard": "IPFS gateway phishing detection (CID patterns, gateway blocklist) — content/ipfs_guard.js",
+      "wave10_lotl": "Living-off-the-Land trusted domain credential harvesting — content/phishvision.js (LOTL enhancement)",
+      "wave11_llmscorer": "AI-generated phishing page detection (sentence uniformity, urgency density, typo absence, DOM repetition) — content/llm_scorer.js",
+      "wave11_vncguard": "EvilnoVNC WebSocket AiTM detection (noVNC library, canvas interaction, RFB protocol) — content/vnc_guard.js",
+      "wave12_pwaguard": "Progressive Web App install phishing detection (manifest brand mismatch, standalone mode) — content/pwa_guard.js",
+      "wave12_tpasentinel": "Third-party app consent phishing detection (high-risk scopes, unverified publisher) — content/tpa_sentinel.js",
+      "wave13_drainerguard": "Crypto wallet drainer detection (dangerous eth methods, unlimited approve, multicall) — content/drainer_guard.js",
+      "wave13_styleauditor": "CSS credential exfiltration + LOTL DOM camouflage detection — content/style_auditor.js"
     }
   }
 }

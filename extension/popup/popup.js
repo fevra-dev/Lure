@@ -31,6 +31,14 @@ const EVENT_TYPE_LABELS = {
   'PROXY_AITM_DETECTED': 'AiTM Proxy',
   'SYNC_HIJACK_DETECTED': 'Sync Hijack',
   'FAKESENDER_BRAND_IMPERSONATION': 'Helpdesk Impersonation',
+  'FIDO_DOWNGRADE_DETECTED': 'FIDO Downgrade',
+  'IPFS_PHISHING_DETECTED': 'IPFS Phishing',
+  'LLM_GENERATED_PHISHING_DETECTED': 'AI-Generated Phishing',
+  'VNC_AITM_DETECTED': 'VNC AiTM',
+  'PWA_PHISHING_DETECTED': 'PWA Phishing',
+  'TPA_CONSENT_PHISHING_DETECTED': 'Consent Phishing',
+  'CRYPTO_DRAINER_DETECTED': 'Wallet Drainer',
+  'CSS_CREDENTIAL_EXFIL_DETECTED': 'CSS Exfiltration',
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -124,6 +132,22 @@ function formatEventDetail(event) {
       return `Score: ${(event.riskScore || 0).toFixed(2)} | Referrer: ${event.referrer || '?'} | Action: ${event.action || '?'}`;
     case 'FAKESENDER_BRAND_IMPERSONATION':
       return `Score: ${(event.riskScore || 0).toFixed(2)} | Brand: ${event.matchedBrand || '?'} | Platform: ${event.platform || '?'} | Action: ${event.action || '?'}`;
+    case 'FIDO_DOWNGRADE_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
+    case 'IPFS_PHISHING_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | Gateway: ${event.gateway || '?'} | Brand: ${event.matchedBrand || '?'} | Action: ${event.action || '?'}`;
+    case 'LLM_GENERATED_PHISHING_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | ${(event.signals || []).slice(0, 3).join(', ')} | Action: ${event.action || '?'}`;
+    case 'VNC_AITM_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
+    case 'PWA_PHISHING_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | Brand: ${event.matchedBrand || '?'} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
+    case 'TPA_CONSENT_PHISHING_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
+    case 'CRYPTO_DRAINER_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
+    case 'CSS_CREDENTIAL_EXFIL_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
     default:
       return event.signals ? event.signals.join(', ') : '';
   }

@@ -9,12 +9,13 @@
  * comparison, and text-to-HTML ratio checks.
  *
  * Signal architecture:
- *   phishvision:brand_keyword_mismatch  +0.35
- *   phishvision:favicon_brand_match     +0.30
- *   phishvision:suspicious_domain       +0.25
- *   phishvision:login_form_present      +0.20
- *   phishvision:brand_color_match       +0.20
- *   phishvision:low_text_ratio          +0.15
+ *   phishvision:brand_keyword_mismatch           +0.35
+ *   phishvision:favicon_brand_match              +0.30
+ *   phishvision:lotl_trusted_domain_credential   +0.30
+ *   phishvision:suspicious_domain                +0.25
+ *   phishvision:login_form_present               +0.20
+ *   phishvision:brand_color_match                +0.20
+ *   phishvision:low_text_ratio                   +0.15
  *
  * Alert threshold: 0.50 | Block threshold: 0.70
  *
@@ -187,6 +188,29 @@ const SUSPICIOUS_DOMAIN_SUFFIXES = [
   '.weebly.com',
   '.wixsite.com',
 ];
+
+/* ------------------------------------------------------------------ */
+/*  LOTL Trusted Domains (Living-off-the-Land)                         */
+/* ------------------------------------------------------------------ */
+
+const LOTL_TRUSTED_DOMAINS = [
+  'sharepoint.com',
+  'sites.google.com',
+  'docs.google.com',
+  'notion.site',
+  'canva.com',
+  'wordpress.com',
+  'airtable.com',
+  'webflow.io',
+  'carrd.co',
+  'bio.link',
+];
+
+const LOTL_DOMAIN_BRAND_MAP = {
+  'sharepoint.com': 'microsoft',
+  'sites.google.com': 'google',
+  'docs.google.com': 'google',
+};
 
 /* ------------------------------------------------------------------ */
 /*  Signal Functions                                                    */
@@ -397,6 +421,53 @@ export function checkColorPaletteMatch(doc, hostname) {
 }
 
 /**
+ * Check if page is hosted on a trusted LOTL platform but impersonates
+ * a different brand with credential fields present.
+ */
+export function checkLOTLTrustedDomain(doc, hostname) {
+  if (!doc || !hostname) return [];
+
+  // Find which LOTL platform this hostname belongs to
+  const matchedPlatform = LOTL_TRUSTED_DOMAINS.find(
+    d => hostname === d || hostname.endsWith('.' + d)
+  );
+  if (!matchedPlatform) return [];
+
+  // Must have credential fields
+  const hasCredentials =
+    doc.querySelectorAll('input[type="password"]').length > 0 ||
+    doc.querySelectorAll('input[type="email"]').length > 0;
+  if (!hasCredentials) return [];
+
+  // Get hosting platform's own brand (if any)
+  const platformBrand = LOTL_DOMAIN_BRAND_MAP[matchedPlatform] || null;
+
+  // Scan page text for brand keywords
+  const bodyText = (doc.body?.innerText || doc.body?.textContent || '').toLowerCase();
+  const title = (doc.title || '').toLowerCase();
+  const combinedText = title + ' ' + bodyText;
+
+  for (const [brandName, brand] of Object.entries(KNOWN_BRANDS)) {
+    // Skip if brand matches the hosting platform's own brand
+    if (brandName === platformBrand) continue;
+
+    const keywordMatch = brand.keywords.some(kw => combinedText.includes(kw));
+    const titleMatch = brand.titlePatterns.some(p => p.test(doc.title || ''));
+
+    if (keywordMatch || titleMatch) {
+      return [{
+        id: 'phishvision:lotl_trusted_domain_credential',
+        weight: 0.30,
+        matchedBrand: brandName,
+        hostingPlatform: matchedPlatform,
+      }];
+    }
+  }
+
+  return [];
+}
+
+/**
  * Convert rgb(r, g, b) string to hex.
  */
 function rgbToHex(rgb) {
@@ -492,6 +563,7 @@ export function runPhishVisionAnalysis() {
   const ratioSignals = checkTextToHtmlRatio(doc);
   const faviconSignals = checkFaviconBrandMatch(doc, hostname);
   const colorSignals = checkColorPaletteMatch(doc, hostname);
+  const lotlSignals = checkLOTLTrustedDomain(doc, hostname);
 
   const allSignals = [
     ...brandSignals,
@@ -500,6 +572,7 @@ export function runPhishVisionAnalysis() {
     ...ratioSignals,
     ...faviconSignals,
     ...colorSignals,
+    ...lotlSignals,
   ];
 
   const { riskScore, signalList } = calculatePhishVisionRiskScore(allSignals);

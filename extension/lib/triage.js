@@ -212,6 +212,78 @@ const EVENT_CLASSIFICATION = {
     threatActor: 'Multiple (helpdesk platform abuse)',
     description: 'Helpdesk platform brand impersonation — attacker abuses free-tier helpdesk to impersonate brand and harvest credentials',
   },
+
+  // Wave 10: CTAPGuard
+  FIDO_DOWNGRADE_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1556.006',
+    mitreName: 'Modify Authentication Process: Multi-Factor Authentication',
+    threatActor: 'Evilginx operators / Tycoon 2FA',
+    description: 'FIDO downgrade attack — User-Agent spoofing forces identity provider to fall back from passkey to password+OTP, enabling AiTM credential capture',
+  },
+
+  // Wave 10: IPFSGuard
+  IPFS_PHISHING_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1583.006',
+    mitreName: 'Acquire Infrastructure: Web Services',
+    threatActor: 'Multiple (commodity)',
+    description: 'Phishing page hosted on IPFS gateway — takedown-resistant content served through decentralized infrastructure',
+  },
+
+  // Wave 11: LLMScorer
+  LLM_GENERATED_PHISHING_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1566.002',
+    mitreName: 'Phishing: Spearphishing Link',
+    threatActor: 'TA4557 / Scattered Spider (AI phishing kits)',
+    description: 'AI-generated phishing page detected — statistical text regularities, urgency phrase density, and DOM structure patterns consistent with LLM output',
+  },
+
+  // Wave 11: VNCGuard
+  VNC_AITM_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1557.003',
+    mitreName: 'Adversary-in-the-Middle: Proxy',
+    threatActor: 'Storm-1811 / TA577 (EvilnoVNC operators)',
+    description: 'EvilnoVNC WebSocket AiTM attack — real login page streamed via VNC canvas to victim browser, capturing credentials and session tokens transparently',
+  },
+
+  // Wave 12: PWAGuard
+  PWA_PHISHING_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1036.005',
+    mitreName: 'Masquerading: Match Legitimate Name or Location',
+    threatActor: 'Czech/Hungarian banking campaigns / US FinServ PWA kits',
+    description: 'Malicious Progressive Web App impersonating legitimate brand — installs as standalone app without URL bar to harvest credentials',
+  },
+
+  // Wave 12: TPASentinel
+  TPA_CONSENT_PHISHING_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1528',
+    mitreName: 'Steal Application Access Token',
+    threatActor: 'Storm-0324 / Midnight Blizzard (APT29)',
+    description: 'Malicious OAuth app consent phishing — app requests dangerous permissions (Mail.ReadWrite, Files.ReadWrite.All) via social engineering',
+  },
+
+  // Wave 13: DrainerGuard
+  CRYPTO_DRAINER_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1656',
+    mitreName: 'Impersonation',
+    threatActor: 'Inferno Drainer / Angel Drainer / Pink Drainer',
+    description: 'Crypto wallet drainer detected — malicious script attempts to sign dangerous transactions (eth_sendTransaction, unlimited approve, multicall batch)',
+  },
+
+  // Wave 13: StyleAuditor
+  CSS_CREDENTIAL_EXFIL_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1056.003',
+    mitreName: 'Input Capture: Web Portal Capture',
+    threatActor: 'Advanced phishing kit authors',
+    description: 'CSS-based credential exfiltration or LOTL DOM camouflage — input[value] attribute selectors with url() or hidden iframe/form credential harvesting',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -437,6 +509,70 @@ function getRecommendedActions(eventType, severity) {
       actions.push('If credentials were entered: force password reset for the affected user');
       actions.push('Report the helpdesk account to the platform abuse team (Zendesk, Freshdesk, etc.)');
       actions.push('Search email gateway for delivery URLs linking to this helpdesk subdomain');
+      break;
+
+    case 'FIDO_DOWNGRADE_DETECTED':
+      actions.push('Check if credentials were entered on the downgraded login page');
+      actions.push('Verify User-Agent header in proxy/CDN logs for Safari+Windows mismatch');
+      actions.push('If credentials compromised: force password reset AND revoke session tokens');
+      actions.push('Block the proxy domain at DNS/web proxy');
+      actions.push('Report to the identity provider abuse team (Microsoft, Google, Okta)');
+      break;
+
+    case 'IPFS_PHISHING_DETECTED':
+      actions.push('Block the IPFS gateway domain at DNS/web proxy');
+      actions.push('Check if credentials were entered on the IPFS-hosted page');
+      actions.push('If credentials compromised: force password reset for the affected user');
+      actions.push('Report the CID to IPFS gateway abuse teams for denylist addition');
+      actions.push('Search email gateway for delivery URLs containing the IPFS CID');
+      break;
+
+    case 'LLM_GENERATED_PHISHING_DETECTED':
+      actions.push('Block the phishing page domain at DNS/web proxy');
+      actions.push('Check if credentials were entered on the AI-generated page');
+      actions.push('If credentials compromised: force password reset for the affected user');
+      actions.push('Report the page to Safe Browsing / PhishTank');
+      actions.push('Search email gateway for delivery URLs linking to this domain');
+      break;
+
+    case 'VNC_AITM_DETECTED':
+      actions.push('Block the VNC proxy domain at DNS/web proxy immediately');
+      actions.push('Revoke all active sessions for the targeted auth provider');
+      actions.push('Force password reset AND re-enroll MFA (session tokens may be compromised)');
+      actions.push('Check auth provider audit logs for suspicious token grants');
+      actions.push('Report the EvilnoVNC infrastructure to the targeted provider\'s abuse team');
+      break;
+
+    case 'PWA_PHISHING_DETECTED':
+      actions.push('Uninstall the malicious PWA from the user\'s device');
+      actions.push('Block the PWA hosting domain at DNS/web proxy');
+      actions.push('Check if credentials were entered in the standalone PWA window');
+      actions.push('If credentials compromised: force password reset for the affected user');
+      actions.push('Report the page to Safe Browsing / PhishTank');
+      break;
+
+    case 'TPA_CONSENT_PHISHING_DETECTED':
+      actions.push('Revoke the malicious app consent in Azure AD / Google Workspace admin portal');
+      actions.push('Review OAuth app audit logs for data access by the malicious app');
+      actions.push('Block the app client ID in Conditional Access / OAuth app policies');
+      actions.push('If tokens were granted: revoke all active sessions for the affected user');
+      actions.push('Search email gateway for the phishing URL that led to the consent page');
+      break;
+
+    case 'CRYPTO_DRAINER_DETECTED':
+      actions.push('Block the drainer page domain at DNS/web proxy immediately');
+      actions.push('Check if the user approved any transactions — revoke token approvals via revoke.cash');
+      actions.push('If transactions were signed: assess asset loss and notify affected user');
+      actions.push('Report the drainer contract address to ScamSniffer / Chainabuse');
+      actions.push('Search for the phishing delivery URL in email/chat/social media');
+      break;
+
+    case 'CSS_CREDENTIAL_EXFIL_DETECTED':
+      actions.push('Block the page domain at DNS/web proxy');
+      actions.push('Check if credentials were autofilled into hidden or exfiltrated fields');
+      actions.push('If credentials compromised: force password reset for the affected user');
+      actions.push('Report the CSS exfiltration technique to Safe Browsing / PhishTank');
+      actions.push('Review browser autofill settings to restrict cross-origin autofill');
       break;
 
     default:
