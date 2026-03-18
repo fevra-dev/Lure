@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishOps Demo: ProxyGuard AiTM Detection</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0A0907;
+      color: #D4CCBC;
+      font-family: 'Work Sans', system-ui, -apple-system, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      border-bottom: 2px solid #2A2520;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    h1 { color: #D4CCBC; font-size: 20px; font-weight: 600; text-transform: lowercase; }
+    .badge {
+      display: inline-block;
+      background: #BF1B1B;
+      color: #F5F0E8;
+      font-size: 11px;
+      padding: 2px 8px;
+      margin-left: 8px;
+      vertical-align: middle;
+      text-transform: lowercase;
+    }
+    .threat-card {
+      background: #141210;
+      border: 1px solid #2A2520;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .threat-card h2 { color: #D4861A; font-size: 15px; margin-bottom: 8px; font-weight: 600; }
+    .threat-card p { color: #8C7A5C; font-size: 13px; line-height: 1.6; }
+    .safe-notice {
+      background: rgba(212,134,26,0.08);
+      border: 1px solid #2A2520;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: #D4861A;
+    }
+    .demo-container {
+      background: #141210;
+      border: 2px solid #2A2520;
+      padding: 24px;
+      margin: 20px 0;
+    }
+    button.demo-btn {
+      background: #BF1B1B;
+      color: #F5F0E8;
+      border: none;
+      padding: 10px 24px;
+      cursor: pointer;
+      font-family: 'Work Sans', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.15s;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    button.demo-btn:hover { background: #A31717; }
+    button.demo-btn.safe {
+      background: transparent;
+      border: 1px solid #3A6B1C;
+      color: #3A6B1C;
+    }
+    button.demo-btn.safe:hover { background: rgba(58,107,28,0.1); }
+    .attack-flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      background: #1E1B18;
+      border: 1px solid #2A2520;
+      padding: 8px 14px;
+      font-size: 12px;
+    }
+    .flow-arrow { color: #4A4540; font-size: 18px; }
+    .flow-step.active { border-color: #BF1B1B; color: #BF1B1B; }
+    .log {
+      background: #0F0D0B;
+      border: 1px solid #2A2520;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #3A6B1C;
+      margin-top: 16px;
+    }
+    .signal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .signal-item {
+      background: rgba(212,204,188,0.03);
+      padding: 10px 12px;
+    }
+    .signal-item .name { font-size: 11px; color: #D4861A; font-family: monospace; }
+    .signal-item .weight { font-size: 18px; font-weight: 700; color: #BF1B1B; }
+    .signal-item .desc { font-size: 11px; color: #6B6560; margin-top: 2px; }
+    code { color: #BF1B1B; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>phishops demo <span class="badge">safe simulation</span></h1>
+    <p style="color:#6B6560; margin-top:4px; font-size:13px;">aitm reverse proxy detection &mdash; proxyguard signal analysis</p>
+  </div>
+
+  <div class="safe-notice">
+    This demo simulates AiTM reverse proxy detection by calling signal analysis
+    functions directly. No real proxy connections are made. ProxyGuard detects
+    Evilginx, Modlishka, Muraena, and Starkiller PhaaS patterns including
+    @-symbol URL masking, auth page domain mismatches, and proxy artifacts.
+  </div>
+
+  <div class="threat-card">
+    <h2>attack chain: aitm reverse proxy phishing</h2>
+    <p>
+      Attacker deploys Evilginx/Modlishka/Starkiller to transparently reverse-proxy
+      a legitimate login page. Victim sees real content, enters credentials, completes
+      MFA &mdash; and the proxy captures both password and session token. MFA is
+      defeated because the proxy relays the real MFA challenge. Starkiller adds
+      <code>@</code>-symbol URL masking: <code>https://login.microsoft.com@evil.com</code>
+      visually shows the legitimate domain. Hong Kong CFO deepfake + AiTM: $25M loss.
+    </p>
+
+    <div class="attack-flow">
+      <div class="flow-step">phishing link</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">@-symbol URL masking</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">reverse proxy relay</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">credentials + session token</div>
+    </div>
+  </div>
+
+  <div class="demo-container">
+    <h3 style="color:#D4CCBC; margin-bottom:12px; font-weight:600;">simulate proxy detection</h3>
+    <p style="color:#6B6560; font-size:12px; margin-bottom:16px;">
+      Click to simulate various AiTM proxy scenarios and analyze detection signals.
+    </p>
+
+    <button class="demo-btn" id="btn-starkiller">starkiller @-symbol</button>
+    <button class="demo-btn" id="btn-evilginx">evilginx proxy</button>
+    <button class="demo-btn" id="btn-combined">combined (worst case)</button>
+    <button class="demo-btn safe" id="btn-legitimate">legitimate login (should pass)</button>
+
+    <div class="log" id="log">Click a button to run a simulation...</div>
+  </div>
+
+  <div class="threat-card">
+    <h2>detection signals</h2>
+    <div class="signal-grid">
+      <div class="signal-item">
+        <div class="name">at_symbol_url_masking</div>
+        <div class="weight">+0.45</div>
+        <div class="desc">URL has @ with auth provider before it (Starkiller)</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">auth_page_domain_mismatch</div>
+        <div class="weight">+0.40</div>
+        <div class="desc">Login form + auth references on non-auth domain</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">suspicious_form_action</div>
+        <div class="weight">+0.35</div>
+        <div class="desc">Form posts to unknown third-party domain</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">missing_security_headers</div>
+        <div class="weight">+0.25</div>
+        <div class="desc">No CSP meta tag on auth-like page</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">dom_injection_artifact</div>
+        <div class="weight">+0.20</div>
+        <div class="desc">Proxy framework signatures or foreign scripts</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">response_timing_anomaly</div>
+        <div class="weight">+0.20</div>
+        <div class="desc">Page load >3000ms (proxy relay latency)</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      checkAtSymbolUrlMasking,
+      checkAuthPageDomainMismatch,
+      checkSuspiciousFormAction,
+      checkMissingSecurityHeaders,
+      checkDomInjectionArtifacts,
+      calculateProxyRiskScore,
+    } from '../content/proxy_guard.js';
+
+    const logEl = document.getElementById('log');
+
+    function log(msg) {
+      const time = new Date().toISOString().split('T')[1].split('.')[0];
+      logEl.textContent += `\n[${time}] ${msg}`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function verdict(score) {
+      return score >= 0.70 ? 'HIGH RISK — BLOCKED' : score >= 0.50 ? 'ALERT' : 'PASS';
+    }
+
+    function mockDoc(html) {
+      const parser = new DOMParser();
+      return parser.parseFromString(html, 'text/html');
+    }
+
+    document.getElementById('btn-starkiller').addEventListener('click', () => {
+      log('--- Starkiller @-symbol URL masking ---');
+      log('');
+
+      const url = 'https://login.microsoftonline.com@evil-proxy.com/common/oauth2';
+      const signals = checkAtSymbolUrlMasking(url);
+      const { riskScore, signalList } = calculateProxyRiskScore(signals);
+
+      log(`URL: ${url}`);
+      log(`Signals: ${signalList.join(', ') || 'none'}`);
+      log(`Provider: ${signals[0]?.targetProvider || 'none'}`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log('');
+      log('The @ symbol makes the browser send traffic to evil-proxy.com');
+      log('while visually displaying login.microsoftonline.com');
+      log('');
+    });
+
+    document.getElementById('btn-evilginx').addEventListener('click', () => {
+      log('--- Evilginx reverse proxy simulation ---');
+      log('');
+
+      const doc = mockDoc(`
+        <html><head><title>Sign in - Microsoft</title></head>
+        <body>
+          <p>Sign in to your Microsoft account</p>
+          <form action="https://evil-collector.net/harvest">
+            <input type="email">
+            <input type="password">
+          </form>
+        </body></html>
+      `);
+      const hostname = 'evil-proxy.com';
+
+      const mismatchSignals = checkAuthPageDomainMismatch(doc, hostname);
+      const formSignals = checkSuspiciousFormAction(doc, hostname);
+      const headerSignals = checkMissingSecurityHeaders(doc);
+      const allSignals = [...mismatchSignals, ...formSignals, ...headerSignals];
+      const { riskScore, signalList } = calculateProxyRiskScore(allSignals);
+
+      log(`Hostname: ${hostname}`);
+      log(`Auth mismatch: ${mismatchSignals.map(s => `${s.id} (${s.targetProvider})`).join(', ') || 'none'}`);
+      log(`Form action: ${formSignals.map(s => s.id).join(', ') || 'none'}`);
+      log(`Headers: ${headerSignals.map(s => s.id).join(', ') || 'none'}`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log('');
+    });
+
+    document.getElementById('btn-combined').addEventListener('click', () => {
+      log('--- Combined proxy signals (worst case) ---');
+      log('');
+
+      const signals = [
+        { id: 'proxy:at_symbol_url_masking', weight: 0.45, targetProvider: 'Microsoft' },
+        { id: 'proxy:auth_page_domain_mismatch', weight: 0.40, targetProvider: 'Microsoft' },
+        { id: 'proxy:suspicious_form_action', weight: 0.35 },
+        { id: 'proxy:missing_security_headers', weight: 0.25 },
+        { id: 'proxy:dom_injection_artifact', weight: 0.20 },
+        { id: 'proxy:response_timing_anomaly', weight: 0.20 },
+      ];
+      const { riskScore, signalList } = calculateProxyRiskScore(signals);
+
+      log('Simulated: all 6 proxy signals firing');
+      log(`Risk score: ${riskScore.toFixed(2)} (capped at 1.00)`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log(`Signals: ${signalList.join(', ')}`);
+      log('');
+    });
+
+    document.getElementById('btn-legitimate').addEventListener('click', () => {
+      log('--- Legitimate login page (benign) ---');
+      log('');
+
+      const url = 'https://login.microsoftonline.com/common/oauth2/authorize?client_id=abc';
+      const atSignals = checkAtSymbolUrlMasking(url);
+
+      const doc = mockDoc(`
+        <html><head><title>My App Login</title>
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
+        </head><body>
+          <form action="/api/login"><input type="password"></form>
+        </body></html>
+      `);
+      const hostname = 'myapp.com';
+
+      const mismatchSignals = checkAuthPageDomainMismatch(doc, hostname);
+      const formSignals = checkSuspiciousFormAction(doc, hostname);
+      const headerSignals = checkMissingSecurityHeaders(doc);
+      const allSignals = [...atSignals, ...mismatchSignals, ...formSignals, ...headerSignals];
+      const { riskScore } = calculateProxyRiskScore(allSignals);
+
+      log(`URL: ${url}`);
+      log(`@-symbol: none (no masking)`);
+      log(`Auth mismatch: none (no auth provider references)`);
+      log(`Form action: none (relative action /api/login)`);
+      log(`CSP: present (meta tag)`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log('');
+    });
+  </script>
+</body>
+</html>

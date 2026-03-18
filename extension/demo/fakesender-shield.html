@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishOps Demo: FakeSender Shield Helpdesk Impersonation Detection</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0A0907;
+      color: #D4CCBC;
+      font-family: 'Work Sans', system-ui, -apple-system, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      border-bottom: 2px solid #2A2520;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    h1 { color: #D4CCBC; font-size: 20px; font-weight: 600; text-transform: lowercase; }
+    .badge {
+      display: inline-block;
+      background: #BF1B1B;
+      color: #F5F0E8;
+      font-size: 11px;
+      padding: 2px 8px;
+      margin-left: 8px;
+      vertical-align: middle;
+      text-transform: lowercase;
+    }
+    .threat-card {
+      background: #141210;
+      border: 1px solid #2A2520;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .threat-card h2 { color: #D4861A; font-size: 15px; margin-bottom: 8px; font-weight: 600; }
+    .threat-card p { color: #8C7A5C; font-size: 13px; line-height: 1.6; }
+    .safe-notice {
+      background: rgba(212,134,26,0.08);
+      border: 1px solid #2A2520;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: #D4861A;
+    }
+    .demo-container {
+      background: #141210;
+      border: 2px solid #2A2520;
+      padding: 24px;
+      margin: 20px 0;
+    }
+    button.demo-btn {
+      background: #BF1B1B;
+      color: #F5F0E8;
+      border: none;
+      padding: 10px 24px;
+      cursor: pointer;
+      font-family: 'Work Sans', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.15s;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    button.demo-btn:hover { background: #A31717; }
+    button.demo-btn.safe {
+      background: transparent;
+      border: 1px solid #3A6B1C;
+      color: #3A6B1C;
+    }
+    button.demo-btn.safe:hover { background: rgba(58,107,28,0.1); }
+    .attack-flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      background: #1E1B18;
+      border: 1px solid #2A2520;
+      padding: 8px 14px;
+      font-size: 12px;
+    }
+    .flow-arrow { color: #4A4540; font-size: 18px; }
+    .flow-step.active { border-color: #BF1B1B; color: #BF1B1B; }
+    .log {
+      background: #0F0D0B;
+      border: 1px solid #2A2520;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #3A6B1C;
+      margin-top: 16px;
+    }
+    .signal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .signal-item {
+      background: rgba(212,204,188,0.03);
+      padding: 10px 12px;
+    }
+    .signal-item .name { font-size: 11px; color: #D4861A; font-family: monospace; }
+    .signal-item .weight { font-size: 18px; font-weight: 700; color: #BF1B1B; }
+    .signal-item .desc { font-size: 11px; color: #6B6560; margin-top: 2px; }
+    code { color: #BF1B1B; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>phishops demo <span class="badge">safe simulation</span></h1>
+    <p style="color:#6B6560; margin-top:4px; font-size:13px;">helpdesk platform brand impersonation &mdash; fakesender shield signal analysis</p>
+  </div>
+
+  <div class="safe-notice">
+    This demo simulates helpdesk platform brand impersonation detection by calling
+    signal analysis functions directly. No real helpdesk pages are loaded. FakeSender
+    Shield detects landing pages on Zendesk, Freshdesk, Zoho, and other helpdesk
+    subdomains that impersonate known brands.
+  </div>
+
+  <div class="threat-card">
+    <h2>attack chain: helpdesk platform brand impersonation</h2>
+    <p>
+      Attacker creates a free-tier helpdesk account (e.g., <code>coinbase-help.zendesk.com</code>)
+      with a brand display name. Emails sent from the platform pass SPF/DKIM/DMARC because
+      they originate from legitimate helpdesk infrastructure. Victims land on the helpdesk
+      subdomain which impersonates the brand and may contain credential harvesting forms
+      or links to external phishing pages.
+    </p>
+
+    <div class="attack-flow">
+      <div class="flow-step">create free helpdesk</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">brand display name</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">email passes SPF/DKIM</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">victim visits landing page</div>
+    </div>
+  </div>
+
+  <div class="demo-container">
+    <h3 style="color:#D4CCBC; margin-bottom:12px; font-weight:600;">simulate helpdesk impersonation detection</h3>
+    <p style="color:#6B6560; font-size:12px; margin-bottom:16px;">
+      Click to simulate various helpdesk impersonation scenarios and analyze detection signals.
+    </p>
+
+    <button class="demo-btn" id="btn-coinbase-zendesk">coinbase on zendesk</button>
+    <button class="demo-btn" id="btn-paypal-freshdesk">paypal on freshdesk</button>
+    <button class="demo-btn" id="btn-combined">combined (worst case)</button>
+    <button class="demo-btn safe" id="btn-legitimate">legitimate helpdesk (should pass)</button>
+
+    <div class="log" id="log">Click a button to run a simulation...</div>
+  </div>
+
+  <div class="threat-card">
+    <h2>detection signals</h2>
+    <div class="signal-grid">
+      <div class="signal-item">
+        <div class="name">helpdesk_brand_subdomain_mismatch</div>
+        <div class="weight">+0.40</div>
+        <div class="desc">Helpdesk subdomain contains known brand name</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">external_phishing_link</div>
+        <div class="weight">+0.30</div>
+        <div class="desc">Links to external non-brand domains</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">credential_on_helpdesk</div>
+        <div class="weight">+0.25</div>
+        <div class="desc">Password fields on a support page</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">brand_impersonation_text</div>
+        <div class="weight">+0.25</div>
+        <div class="desc">Heavy brand references on helpdesk domain</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">free_tier_indicator</div>
+        <div class="weight">+0.20</div>
+        <div class="desc">"Powered by Zendesk" or free plan watermarks</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">urgent_action_language</div>
+        <div class="weight">+0.15</div>
+        <div class="desc">"Account suspended", "verify immediately"</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      isHelpdeskPlatform,
+      checkHelpdeskBrandSubdomainMismatch,
+      checkCredentialOnHelpdesk,
+      checkExternalPhishingLinks,
+      checkBrandImpersonationText,
+      checkFreeTierIndicator,
+      checkUrgentActionLanguage,
+      calculateFakeSenderRiskScore,
+    } from '../content/fakesender_shield.js';
+
+    const logEl = document.getElementById('log');
+
+    function log(msg) {
+      const time = new Date().toISOString().split('T')[1].split('.')[0];
+      logEl.textContent += `\n[${time}] ${msg}`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function verdict(score) {
+      return score >= 0.70 ? 'HIGH RISK \u2014 BLOCKED' : score >= 0.50 ? 'ALERT' : 'PASS';
+    }
+
+    function mockDoc(html) {
+      const parser = new DOMParser();
+      return parser.parseFromString(html, 'text/html');
+    }
+
+    document.getElementById('btn-coinbase-zendesk').addEventListener('click', () => {
+      log('--- Coinbase impersonation on Zendesk ---');
+      log('');
+
+      const doc = mockDoc(`
+        <html><head><title>Coinbase Support Center</title></head>
+        <body>
+          <p>Coinbase account issue. Contact Coinbase support for help with your Coinbase wallet.</p>
+          <a href="https://evil-verify.net/coinbase-login">Verify your account</a>
+          <p>Powered by Zendesk</p>
+          <p>Your account suspended. Verify immediately to restore access.</p>
+        </body></html>
+      `);
+      const hostname = 'coinbase-help.zendesk.com';
+
+      const subdomainSignals = checkHelpdeskBrandSubdomainMismatch(doc, hostname);
+      const linkSignals = checkExternalPhishingLinks(doc, hostname);
+      const textSignals = checkBrandImpersonationText(doc, hostname);
+      const freeTierSignals = checkFreeTierIndicator(doc, hostname);
+      const urgencySignals = checkUrgentActionLanguage(doc);
+      const allSignals = [...subdomainSignals, ...linkSignals, ...textSignals, ...freeTierSignals, ...urgencySignals];
+      const { riskScore, signalList } = calculateFakeSenderRiskScore(allSignals);
+
+      log(`Hostname: ${hostname}`);
+      log(`Platform: ${isHelpdeskPlatform(hostname)?.platform.name}`);
+      log(`Signals: ${signalList.join(', ') || 'none'}`);
+      log(`Brand: ${subdomainSignals[0]?.matchedBrand || 'none'}`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log('');
+    });
+
+    document.getElementById('btn-paypal-freshdesk').addEventListener('click', () => {
+      log('--- PayPal impersonation on Freshdesk ---');
+      log('');
+
+      const doc = mockDoc(`
+        <html><head><title>PayPal Support</title></head>
+        <body>
+          <p>PayPal payment issue. Your PayPal account needs verification.</p>
+          <form><input type="password" placeholder="Enter your PayPal password"></form>
+          <p>PayPal support team</p>
+        </body></html>
+      `);
+      const hostname = 'paypal-support.freshdesk.com';
+
+      const subdomainSignals = checkHelpdeskBrandSubdomainMismatch(doc, hostname);
+      const credentialSignals = checkCredentialOnHelpdesk(doc, hostname);
+      const textSignals = checkBrandImpersonationText(doc, hostname);
+      const allSignals = [...subdomainSignals, ...credentialSignals, ...textSignals];
+      const { riskScore, signalList } = calculateFakeSenderRiskScore(allSignals);
+
+      log(`Hostname: ${hostname}`);
+      log(`Signals: ${signalList.join(', ') || 'none'}`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log('');
+    });
+
+    document.getElementById('btn-combined').addEventListener('click', () => {
+      log('--- Combined helpdesk impersonation signals (worst case) ---');
+      log('');
+
+      const signals = [
+        { id: 'fakesender:helpdesk_brand_subdomain_mismatch', weight: 0.40, matchedBrand: 'coinbase' },
+        { id: 'fakesender:external_phishing_link', weight: 0.30 },
+        { id: 'fakesender:credential_on_helpdesk', weight: 0.25 },
+        { id: 'fakesender:brand_impersonation_text', weight: 0.25 },
+        { id: 'fakesender:free_tier_indicator', weight: 0.20 },
+        { id: 'fakesender:urgent_action_language', weight: 0.15 },
+      ];
+      const { riskScore, signalList } = calculateFakeSenderRiskScore(signals);
+
+      log('Simulated: all 6 helpdesk impersonation signals firing');
+      log(`Risk score: ${riskScore.toFixed(2)} (capped at 1.00)`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log(`Signals: ${signalList.join(', ')}`);
+      log('');
+    });
+
+    document.getElementById('btn-legitimate').addEventListener('click', () => {
+      log('--- Legitimate helpdesk (benign) ---');
+      log('');
+
+      const doc = mockDoc(`
+        <html><head><title>ACME Corp Support</title></head>
+        <body>
+          <p>Welcome to ACME Corp help center. Browse our knowledge base for answers.</p>
+          <a href="/articles/getting-started">Getting Started Guide</a>
+        </body></html>
+      `);
+      const hostname = 'acmecorp.zendesk.com';
+
+      const subdomainSignals = checkHelpdeskBrandSubdomainMismatch(doc, hostname);
+      const credentialSignals = checkCredentialOnHelpdesk(doc, hostname);
+      const textSignals = checkBrandImpersonationText(doc, hostname);
+      const freeTierSignals = checkFreeTierIndicator(doc, hostname);
+      const allSignals = [...subdomainSignals, ...credentialSignals, ...textSignals, ...freeTierSignals];
+      const { riskScore } = calculateFakeSenderRiskScore(allSignals);
+
+      log(`Hostname: ${hostname}`);
+      log(`Brand mismatch: none (no known brand in subdomain)`);
+      log(`Credentials: none`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log('');
+    });
+  </script>
+</body>
+</html>

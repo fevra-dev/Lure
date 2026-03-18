@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishOps Demo: PhishVision Brand Impersonation Detection</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0A0907;
+      color: #D4CCBC;
+      font-family: 'Work Sans', system-ui, -apple-system, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      border-bottom: 2px solid #2A2520;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    h1 { color: #D4CCBC; font-size: 20px; font-weight: 600; text-transform: lowercase; }
+    .badge {
+      display: inline-block;
+      background: #BF1B1B;
+      color: #F5F0E8;
+      font-size: 11px;
+      padding: 2px 8px;
+      margin-left: 8px;
+      vertical-align: middle;
+      text-transform: lowercase;
+    }
+    .threat-card {
+      background: #141210;
+      border: 1px solid #2A2520;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .threat-card h2 { color: #D4861A; font-size: 15px; margin-bottom: 8px; font-weight: 600; }
+    .threat-card p { color: #8C7A5C; font-size: 13px; line-height: 1.6; }
+    .safe-notice {
+      background: rgba(212,134,26,0.08);
+      border: 1px solid #2A2520;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: #D4861A;
+    }
+    .demo-container {
+      background: #141210;
+      border: 2px solid #2A2520;
+      padding: 24px;
+      margin: 20px 0;
+    }
+    button.demo-btn {
+      background: #BF1B1B;
+      color: #F5F0E8;
+      border: none;
+      padding: 10px 24px;
+      cursor: pointer;
+      font-family: 'Work Sans', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.15s;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    button.demo-btn:hover { background: #A31717; }
+    button.demo-btn.safe {
+      background: transparent;
+      border: 1px solid #3A6B1C;
+      color: #3A6B1C;
+    }
+    button.demo-btn.safe:hover { background: rgba(58,107,28,0.1); }
+    .attack-flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      background: #1E1B18;
+      border: 1px solid #2A2520;
+      padding: 8px 14px;
+      font-size: 12px;
+    }
+    .flow-arrow { color: #4A4540; font-size: 18px; }
+    .flow-step.active { border-color: #BF1B1B; color: #BF1B1B; }
+    .log {
+      background: #0F0D0B;
+      border: 1px solid #2A2520;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #3A6B1C;
+      margin-top: 16px;
+    }
+    .signal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .signal-item {
+      background: rgba(212,204,188,0.03);
+      padding: 10px 12px;
+    }
+    .signal-item .name { font-size: 11px; color: #D4861A; font-family: monospace; }
+    .signal-item .weight { font-size: 18px; font-weight: 700; color: #BF1B1B; }
+    .signal-item .desc { font-size: 11px; color: #6B6560; margin-top: 2px; }
+    code { color: #BF1B1B; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>phishops demo <span class="badge">safe simulation</span></h1>
+    <p style="color:#6B6560; margin-top:4px; font-size:13px;">brand impersonation detection &mdash; phishvision heuristic analysis</p>
+  </div>
+
+  <div class="safe-notice">
+    This demo simulates brand impersonation detection by calling signal analysis
+    functions directly with mock document structures. No real phishing pages are
+    loaded. PhishVision detects pages that mimic known brand login portals on
+    non-brand domains using keyword, favicon, domain, and color heuristics.
+  </div>
+
+  <div class="threat-card">
+    <h2>attack chain: brand impersonation phishing</h2>
+    <p>
+      Attacker creates a page visually mimicking a known brand's login page
+      (Microsoft, Google, Apple, PayPal) on a non-brand domain. APWG reports
+      brand impersonation in 80%+ of credential phishing. Pages are hosted on
+      free platforms (.pages.dev, .netlify.app, .vercel.app) and distributed
+      via email, SMS, or QR codes. No ML models needed &mdash; heuristic DOM
+      analysis catches the vast majority.
+    </p>
+
+    <div class="attack-flow">
+      <div class="flow-step">phishing email/SMS</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">victim visits fake login</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">brand impersonation page</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">credentials harvested</div>
+    </div>
+  </div>
+
+  <div class="demo-container">
+    <h3 style="color:#D4CCBC; margin-bottom:12px; font-weight:600;">simulate brand impersonation detection</h3>
+    <p style="color:#6B6560; font-size:12px; margin-bottom:16px;">
+      Click to simulate various brand impersonation scenarios
+      and analyze detection signals.
+    </p>
+
+    <button class="demo-btn" id="btn-microsoft">microsoft impersonation</button>
+    <button class="demo-btn" id="btn-google">google on free hosting</button>
+    <button class="demo-btn" id="btn-combined">full attack (all signals)</button>
+    <button class="demo-btn safe" id="btn-legitimate">legitimate page (should pass)</button>
+    <button class="demo-btn safe" id="btn-news">news article mentioning brand</button>
+
+    <div class="log" id="log">Click a button to run a simulation...</div>
+  </div>
+
+  <div class="threat-card">
+    <h2>detection signals</h2>
+    <div class="signal-grid">
+      <div class="signal-item">
+        <div class="name">brand_keyword_mismatch</div>
+        <div class="weight">+0.35</div>
+        <div class="desc">Brand name in title/text but domain doesn't match</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">favicon_brand_match</div>
+        <div class="weight">+0.30</div>
+        <div class="desc">Favicon link references brand on non-brand domain</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">suspicious_domain</div>
+        <div class="weight">+0.25</div>
+        <div class="desc">Free hosting, IP address, or excessive subdomains</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">login_form_present</div>
+        <div class="weight">+0.20</div>
+        <div class="desc">Page has password/email credential fields</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">brand_color_match</div>
+        <div class="weight">+0.20</div>
+        <div class="desc">3+ brand palette colors on non-brand domain</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">low_text_ratio</div>
+        <div class="weight">+0.15</div>
+        <div class="desc">text/html ratio &lt;0.08 with credential fields</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      checkBrandKeywordSignals,
+      checkLoginFormSignals,
+      checkDomainSuspicion,
+      checkTextToHtmlRatio,
+      checkFaviconBrandMatch,
+      calculatePhishVisionRiskScore,
+    } from '../content/phishvision.js';
+
+    const logEl = document.getElementById('log');
+
+    function log(msg) {
+      const time = new Date().toISOString().split('T')[1].split('.')[0];
+      logEl.textContent += `\n[${time}] ${msg}`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function verdict(score) {
+      return score >= 0.70 ? 'HIGH RISK — BLOCKED' : score >= 0.50 ? 'ALERT' : 'PASS';
+    }
+
+    // Helper to create a mock document for simulation
+    function mockDoc(html) {
+      const parser = new DOMParser();
+      return parser.parseFromString(html, 'text/html');
+    }
+
+    document.getElementById('btn-microsoft').addEventListener('click', () => {
+      log('--- Microsoft impersonation simulation ---');
+      log('');
+
+      const doc = mockDoc(`
+        <html><head><title>Sign in to your Microsoft Account</title></head>
+        <body><p>Microsoft Office 365 login</p>
+        <form><input type="email"><input type="password"></form></body></html>
+      `);
+      const hostname = 'ms-login-verify.pages.dev';
+
+      const brandSignals = checkBrandKeywordSignals(doc, hostname);
+      const loginSignals = checkLoginFormSignals(doc);
+      const domainSignals = checkDomainSuspicion(hostname);
+      const allSignals = [...brandSignals, ...loginSignals, ...domainSignals];
+      const { riskScore, signalList } = calculatePhishVisionRiskScore(allSignals);
+
+      log(`Hostname: ${hostname}`);
+      log(`Brand signals: ${brandSignals.map(s => `${s.id} (${s.matchedBrand})`).join(', ') || 'none'}`);
+      log(`Login signals: ${loginSignals.map(s => s.id).join(', ') || 'none'}`);
+      log(`Domain signals: ${domainSignals.map(s => s.id).join(', ') || 'none'}`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log('');
+    });
+
+    document.getElementById('btn-google').addEventListener('click', () => {
+      log('--- Google on free hosting simulation ---');
+      log('');
+
+      const doc = mockDoc(`
+        <html><head><title>Sign in - Google Accounts</title>
+        <link rel="icon" href="https://cdn.example.com/google-favicon.ico">
+        </head>
+        <body><p>Sign in with your Google Account</p>
+        <form><input type="email"><input type="password"></form></body></html>
+      `);
+      const hostname = 'google-login.netlify.app';
+
+      const brandSignals = checkBrandKeywordSignals(doc, hostname);
+      const loginSignals = checkLoginFormSignals(doc);
+      const domainSignals = checkDomainSuspicion(hostname);
+      const faviconSignals = checkFaviconBrandMatch(doc, hostname);
+      const allSignals = [...brandSignals, ...loginSignals, ...domainSignals, ...faviconSignals];
+      const { riskScore, signalList } = calculatePhishVisionRiskScore(allSignals);
+
+      log(`Hostname: ${hostname}`);
+      log(`Signals: ${signalList.join(', ')}`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log('');
+    });
+
+    document.getElementById('btn-combined').addEventListener('click', () => {
+      log('--- Full attack simulation (all signals) ---');
+      log('');
+
+      const signals = [
+        { id: 'phishvision:brand_keyword_mismatch', weight: 0.35, matchedBrand: 'microsoft' },
+        { id: 'phishvision:favicon_brand_match', weight: 0.30, matchedBrand: 'microsoft' },
+        { id: 'phishvision:suspicious_domain', weight: 0.25 },
+        { id: 'phishvision:login_form_present', weight: 0.20 },
+        { id: 'phishvision:brand_color_match', weight: 0.20 },
+        { id: 'phishvision:low_text_ratio', weight: 0.15 },
+      ];
+      const { riskScore, signalList } = calculatePhishVisionRiskScore(signals);
+
+      log('Simulated: all 6 signals firing (worst case)');
+      log(`Risk score: ${riskScore.toFixed(2)} (capped at 1.00)`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log(`Signals: ${signalList.join(', ')}`);
+      log('');
+    });
+
+    document.getElementById('btn-legitimate').addEventListener('click', () => {
+      log('--- Legitimate page (benign) ---');
+      log('');
+
+      const doc = mockDoc(`
+        <html><head><title>My App Login</title></head>
+        <body><p>Welcome to MyApp</p>
+        <form><input type="email"><input type="password"></form></body></html>
+      `);
+      const hostname = 'myapp.com';
+
+      const brandSignals = checkBrandKeywordSignals(doc, hostname);
+      const loginSignals = checkLoginFormSignals(doc);
+      const domainSignals = checkDomainSuspicion(hostname);
+      const allSignals = [...brandSignals, ...loginSignals, ...domainSignals];
+      const { riskScore } = calculatePhishVisionRiskScore(allSignals);
+
+      log(`Hostname: ${hostname}`);
+      log(`Brand signals: none (no brand keywords)`);
+      log(`Login signals: ${loginSignals.length > 0 ? 'login_form_present (+0.20)' : 'none'}`);
+      log(`Domain signals: none (legitimate domain)`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${verdict(riskScore)} — login form alone is well below alert threshold`);
+      log('');
+    });
+
+    document.getElementById('btn-news').addEventListener('click', () => {
+      log('--- News article mentioning brand ---');
+      log('');
+
+      const doc = mockDoc(`
+        <html><head><title>Microsoft announces new security features</title></head>
+        <body><p>Microsoft today announced new security features for Office 365 users.
+        The company said the updates will roll out over the next quarter.</p></body></html>
+      `);
+      const hostname = 'technews.com';
+
+      const brandSignals = checkBrandKeywordSignals(doc, hostname);
+      const loginSignals = checkLoginFormSignals(doc);
+      const domainSignals = checkDomainSuspicion(hostname);
+      const allSignals = [...brandSignals, ...loginSignals, ...domainSignals];
+      const { riskScore } = calculatePhishVisionRiskScore(allSignals);
+
+      log(`Hostname: ${hostname}`);
+      log(`Brand signals: ${brandSignals.length > 0 ? 'brand_keyword_mismatch (+0.35)' : 'none'}`);
+      log(`Login signals: none (no credential fields)`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${verdict(riskScore)} — brand keyword alone (0.35) is below 0.50 alert threshold`);
+      log('');
+    });
+  </script>
+</body>
+</html>

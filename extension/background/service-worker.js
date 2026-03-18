@@ -550,7 +550,51 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Wave 8: PhishVision events
+  if (message.type === 'PHISHVISION_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 8: ProxyGuard events
+  if (message.type === 'PROXYGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 9: SyncGuard events
+  if (message.type === 'SYNCGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 9: FakeSender Shield events
+  if (message.type === 'FAKESENDER_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
   return false;
 });
 
-console.debug('[PHISHOPS] Service worker loaded — all Wave 1–7 detectors active');
+console.debug('[PHISHOPS] Service worker loaded — all Wave 1–9 detectors active');

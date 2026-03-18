@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PhishOps Security Suite",
   "version": "1.0.0",
-  "description": "Browser-native phishing defence: 21 detectors covering OAuth abuse, HTML smuggling, extension supply chain, clipboard injection, fullscreen overlay, passkey theft, QR session hijacking, virtual camera detection, TOAD screen share, and agentic guardrails.",
+  "description": "Browser-native phishing defence: 25 detectors covering OAuth abuse, HTML smuggling, extension supply chain, clipboard injection, fullscreen overlay, passkey theft, QR session hijacking, virtual camera detection, TOAD screen share, brand impersonation, AiTM proxy detection, browser sync hijacking, helpdesk platform abuse, and agentic guardrails.",
 
   "permissions": [
     "storage",
@@ -69,6 +69,26 @@
       "matches": ["<all_urls>"],
       "js": ["content/screenshare_guard.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/phishvision.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/proxy_guard.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/sync_guard.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/fakesender_shield.js"],
+      "run_at": "document_idle"
     }
   ],
 
@@ -106,7 +126,11 @@
       "wave6_passkeyguard": "WebAuthn/Passkey credential substitution detection — content/passkey_guard.js",
       "wave6_qrljackingguard": "QR code session hijacking detection — content/qrljacking_guard.js",
       "wave7_webrtcguard": "WebRTC virtual camera detection — content/webrtc_guard.js",
-      "wave7_screenshareguard": "TOAD screen share detection — content/screenshare_guard.js"
+      "wave7_screenshareguard": "TOAD screen share detection — content/screenshare_guard.js",
+      "wave8_phishvision": "Brand impersonation detection — content/phishvision.js",
+      "wave8_proxyguard": "AiTM reverse proxy detection — content/proxy_guard.js + background/service-worker.js",
+      "wave9_syncguard": "Browser sync hijacking detection — content/sync_guard.js",
+      "wave9_fakesender": "Helpdesk platform brand impersonation — content/fakesender_shield.js"
     }
   }
 }

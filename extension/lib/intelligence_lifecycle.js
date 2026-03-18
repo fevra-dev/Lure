@@ -143,6 +143,42 @@ export const PRIORITY_INTELLIGENCE_REQUIREMENTS = [
     status: 'active',
     quarterAdded: 'Q1-2026',
   },
+  {
+    id: 'PIR-013',
+    question: 'Are threat actors deploying brand impersonation phishing pages that mimic known login portals on non-brand domains?',
+    detectors: ['PHISHVISION_BRAND_IMPERSONATION'],
+    collectionSources: ['DOM text/title analysis', 'favicon href analysis', 'domain suspicion heuristics', 'color palette matching'],
+    priority: 'critical',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
+  {
+    id: 'PIR-014',
+    question: 'Are AiTM reverse proxy phishing attacks being used to capture session tokens in real time?',
+    detectors: ['PROXY_AITM_DETECTED'],
+    collectionSources: ['URL @-symbol masking detection', 'auth page domain mismatch', 'form action analysis', 'CSP meta tag absence'],
+    priority: 'critical',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
+  {
+    id: 'PIR-015',
+    question: 'Are threat actors using browser sync hijacking via social engineering to replicate victim credentials to attacker-controlled devices?',
+    detectors: ['SYNC_HIJACK_DETECTED'],
+    collectionSources: ['document.referrer analysis on account flow pages', 'DOM text analysis for sync/remote support instructions'],
+    priority: 'critical',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
+  {
+    id: 'PIR-016',
+    question: 'Are attackers abusing free-tier helpdesk platforms to impersonate brands and harvest credentials via legitimate email infrastructure?',
+    detectors: ['FAKESENDER_BRAND_IMPERSONATION'],
+    collectionSources: ['helpdesk subdomain analysis', 'brand keyword matching on helpdesk pages', 'credential field detection on support pages'],
+    priority: 'high',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -231,6 +267,9 @@ export function correlateEvents(events) {
     new Set(['CLICKFIX_CLIPBOARD_INJECTION', 'FULLSCREEN_BITM_OVERLAY', 'AUTOFILL_EXTENSION_CLICKJACK']),
     new Set(['PASSKEY_CREDENTIAL_INTERCEPTION', 'QRLJACKING_SESSION_HIJACK', 'OAUTH_DEVICE_CODE_FLOW']),
     new Set(['WEBRTC_VIRTUAL_CAMERA_DETECTED', 'SCREENSHARE_TOAD_DETECTED', 'CLICKFIX_CLIPBOARD_INJECTION']),
+    new Set(['PHISHVISION_BRAND_IMPERSONATION', 'PROXY_AITM_DETECTED', 'AUTOFILL_HIDDEN_FIELD_HARVEST']),
+    new Set(['SYNC_HIJACK_DETECTED', 'SCREENSHARE_TOAD_DETECTED', 'CLICKFIX_CLIPBOARD_INJECTION']),
+    new Set(['FAKESENDER_BRAND_IMPERSONATION', 'PHISHVISION_BRAND_IMPERSONATION', 'AUTOFILL_HIDDEN_FIELD_HARVEST']),
   ];
 
   for (let i = 0; i < events.length; i++) {

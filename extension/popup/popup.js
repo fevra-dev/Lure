@@ -27,6 +27,10 @@ const EVENT_TYPE_LABELS = {
   'QRLJACKING_SESSION_HIJACK': 'QR Session Hijack',
   'WEBRTC_VIRTUAL_CAMERA_DETECTED': 'Virtual Camera',
   'SCREENSHARE_TOAD_DETECTED': 'TOAD Screen Share',
+  'PHISHVISION_BRAND_IMPERSONATION': 'Brand Impersonation',
+  'PROXY_AITM_DETECTED': 'AiTM Proxy',
+  'SYNC_HIJACK_DETECTED': 'Sync Hijack',
+  'FAKESENDER_BRAND_IMPERSONATION': 'Helpdesk Impersonation',
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -112,6 +116,14 @@ function formatEventDetail(event) {
       return `Score: ${(event.riskScore || 0).toFixed(2)} | Device: ${event.deviceLabel || '?'} | Action: ${event.action || '?'}`;
     case 'SCREENSHARE_TOAD_DETECTED':
       return `Score: ${(event.riskScore || 0).toFixed(2)} | Action: ${event.action || '?'} | Cred: ${event.credentialFieldFocused ? 'yes' : 'no'}`;
+    case 'PHISHVISION_BRAND_IMPERSONATION':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | Brand: ${event.matchedBrand || '?'} | Action: ${event.action || '?'}`;
+    case 'PROXY_AITM_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | Provider: ${event.targetProvider || '?'} | Action: ${event.action || '?'}`;
+    case 'SYNC_HIJACK_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | Referrer: ${event.referrer || '?'} | Action: ${event.action || '?'}`;
+    case 'FAKESENDER_BRAND_IMPERSONATION':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | Brand: ${event.matchedBrand || '?'} | Platform: ${event.platform || '?'} | Action: ${event.action || '?'}`;
     default:
       return event.signals ? event.signals.join(', ') : '';
   }

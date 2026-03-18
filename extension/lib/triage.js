@@ -176,6 +176,42 @@ const EVENT_CLASSIFICATION = {
     threatActor: 'MuddyWater/TA450 / RansomHub / Luna Moth / BazarCall',
     description: 'TOAD screen share attack — attacker uses social engineering to observe credentials and MFA codes via screen share',
   },
+
+  // Wave 8: PhishVision
+  PHISHVISION_BRAND_IMPERSONATION: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1566.002',
+    mitreName: 'Phishing: Spearphishing Link',
+    threatActor: 'Multiple (brand impersonation is universal)',
+    description: 'Brand impersonation phishing page — mimics known login portal on non-brand domain',
+  },
+
+  // Wave 8: ProxyGuard
+  PROXY_AITM_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1557.003',
+    mitreName: 'Adversary-in-the-Middle: Proxy',
+    threatActor: 'Starkiller / Evilginx / Modlishka operators',
+    description: 'AiTM reverse proxy phishing — transparent relay captures credentials and session tokens, defeating MFA',
+  },
+
+  // Wave 9: SyncGuard
+  SYNC_HIJACK_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1078.004',
+    mitreName: 'Valid Accounts: Cloud Accounts',
+    threatActor: 'Scattered Spider / UNC3944',
+    description: 'Browser sync hijacking — social engineering to add attacker-controlled account to victim browser sync, replicating all saved credentials',
+  },
+
+  // Wave 9: FakeSender Shield
+  FAKESENDER_BRAND_IMPERSONATION: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1566.002',
+    mitreName: 'Phishing: Spearphishing Link',
+    threatActor: 'Multiple (helpdesk platform abuse)',
+    description: 'Helpdesk platform brand impersonation — attacker abuses free-tier helpdesk to impersonate brand and harvest credentials',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -369,6 +405,38 @@ function getRecommendedActions(eventType, severity) {
       actions.push('Check if credentials or MFA codes were visible during the screen share');
       actions.push('If credentials were exposed: force password reset and revoke active sessions');
       actions.push('Block the page domain at DNS/web proxy');
+      break;
+
+    case 'PHISHVISION_BRAND_IMPERSONATION':
+      actions.push('Block the phishing page domain at DNS/web proxy');
+      actions.push('Check if credentials were entered on the impersonation page');
+      actions.push('If credentials were entered: force password reset for the affected user');
+      actions.push('Report the page to Safe Browsing / PhishTank');
+      actions.push('Search email gateway for delivery URLs linking to this domain');
+      break;
+
+    case 'PROXY_AITM_DETECTED':
+      actions.push('Block the proxy domain at DNS/web proxy immediately');
+      actions.push('Revoke all active sessions for the targeted auth provider');
+      actions.push('Force password reset AND re-enroll MFA (session tokens may be compromised)');
+      actions.push('Check auth provider audit logs for suspicious token grants');
+      actions.push('Report the proxy infrastructure to the targeted provider\'s abuse team');
+      break;
+
+    case 'SYNC_HIJACK_DETECTED':
+      actions.push('Remove the attacker-controlled account from the browser profile immediately');
+      actions.push('Disable browser sync and revoke sync tokens');
+      actions.push('Force password reset for all accounts synced to the browser');
+      actions.push('Audit Google/Microsoft account activity for unauthorized access');
+      actions.push('Check for remote support tools (TeamViewer, AnyDesk) on the endpoint');
+      break;
+
+    case 'FAKESENDER_BRAND_IMPERSONATION':
+      actions.push('Block the helpdesk subdomain at DNS/web proxy');
+      actions.push('Check if credentials were entered on the impersonation page');
+      actions.push('If credentials were entered: force password reset for the affected user');
+      actions.push('Report the helpdesk account to the platform abuse team (Zendesk, Freshdesk, etc.)');
+      actions.push('Search email gateway for delivery URLs linking to this helpdesk subdomain');
       break;
 
     default:

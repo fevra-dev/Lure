@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishOps Demo: SyncGuard Browser Sync Hijacking Detection</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0A0907;
+      color: #D4CCBC;
+      font-family: 'Work Sans', system-ui, -apple-system, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      border-bottom: 2px solid #2A2520;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    h1 { color: #D4CCBC; font-size: 20px; font-weight: 600; text-transform: lowercase; }
+    .badge {
+      display: inline-block;
+      background: #BF1B1B;
+      color: #F5F0E8;
+      font-size: 11px;
+      padding: 2px 8px;
+      margin-left: 8px;
+      vertical-align: middle;
+      text-transform: lowercase;
+    }
+    .threat-card {
+      background: #141210;
+      border: 1px solid #2A2520;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .threat-card h2 { color: #D4861A; font-size: 15px; margin-bottom: 8px; font-weight: 600; }
+    .threat-card p { color: #8C7A5C; font-size: 13px; line-height: 1.6; }
+    .safe-notice {
+      background: rgba(212,134,26,0.08);
+      border: 1px solid #2A2520;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: #D4861A;
+    }
+    .demo-container {
+      background: #141210;
+      border: 2px solid #2A2520;
+      padding: 24px;
+      margin: 20px 0;
+    }
+    button.demo-btn {
+      background: #BF1B1B;
+      color: #F5F0E8;
+      border: none;
+      padding: 10px 24px;
+      cursor: pointer;
+      font-family: 'Work Sans', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.15s;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    button.demo-btn:hover { background: #A31717; }
+    button.demo-btn.safe {
+      background: transparent;
+      border: 1px solid #3A6B1C;
+      color: #3A6B1C;
+    }
+    button.demo-btn.safe:hover { background: rgba(58,107,28,0.1); }
+    .attack-flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      background: #1E1B18;
+      border: 1px solid #2A2520;
+      padding: 8px 14px;
+      font-size: 12px;
+    }
+    .flow-arrow { color: #4A4540; font-size: 18px; }
+    .flow-step.active { border-color: #BF1B1B; color: #BF1B1B; }
+    .log {
+      background: #0F0D0B;
+      border: 1px solid #2A2520;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #3A6B1C;
+      margin-top: 16px;
+    }
+    .signal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .signal-item {
+      background: rgba(212,204,188,0.03);
+      padding: 10px 12px;
+    }
+    .signal-item .name { font-size: 11px; color: #D4861A; font-family: monospace; }
+    .signal-item .weight { font-size: 18px; font-weight: 700; color: #BF1B1B; }
+    .signal-item .desc { font-size: 11px; color: #6B6560; margin-top: 2px; }
+    code { color: #BF1B1B; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>phishops demo <span class="badge">safe simulation</span></h1>
+    <p style="color:#6B6560; margin-top:4px; font-size:13px;">browser sync hijacking detection &mdash; syncguard signal analysis</p>
+  </div>
+
+  <div class="safe-notice">
+    This demo simulates browser sync hijacking detection by calling signal analysis
+    functions directly. No real account flows are initiated. SyncGuard detects
+    Scattered Spider / UNC3944 social engineering patterns that precede sync hijacking.
+  </div>
+
+  <div class="threat-card">
+    <h2>attack chain: browser sync hijacking</h2>
+    <p>
+      Scattered Spider / UNC3944 social engineer helpdesk staff or users into adding
+      an attacker-controlled Google/Microsoft account to their browser profile. Once
+      browser sync activates, all saved passwords, cookies, bookmarks, and autofill
+      data replicate to the attacker's device. CrowdStrike detects post-compromise
+      lateral movement but not the browser API call itself.
+    </p>
+
+    <div class="attack-flow">
+      <div class="flow-step">social engineering call</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">remote support session</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">add attacker account</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step active">sync replicates credentials</div>
+    </div>
+  </div>
+
+  <div class="demo-container">
+    <h3 style="color:#D4CCBC; margin-bottom:12px; font-weight:600;">simulate sync hijacking detection</h3>
+    <p style="color:#6B6560; font-size:12px; margin-bottom:16px;">
+      Click to simulate various browser sync hijacking scenarios and analyze detection signals.
+    </p>
+
+    <button class="demo-btn" id="btn-suspicious-referrer">suspicious referrer</button>
+    <button class="demo-btn" id="btn-sync-instructions">sync instructions</button>
+    <button class="demo-btn" id="btn-combined">combined (worst case)</button>
+    <button class="demo-btn safe" id="btn-legitimate">legitimate flow (should pass)</button>
+
+    <div class="log" id="log">Click a button to run a simulation...</div>
+  </div>
+
+  <div class="threat-card">
+    <h2>detection signals</h2>
+    <div class="signal-grid">
+      <div class="signal-item">
+        <div class="name">add_account_suspicious_referrer</div>
+        <div class="weight">+0.40</div>
+        <div class="desc">Navigation to account flow from non-trusted referrer</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">sync_setup_instructions</div>
+        <div class="weight">+0.35</div>
+        <div class="desc">Page contains "add account", "turn on sync" instructions</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">remote_support_context</div>
+        <div class="weight">+0.30</div>
+        <div class="desc">TeamViewer, AnyDesk, or remote support references</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">profile_creation_social_engineering</div>
+        <div class="weight">+0.25</div>
+        <div class="desc">Instructions to create profile with provided credentials</div>
+      </div>
+      <div class="signal-item">
+        <div class="name">non_standard_account_flow</div>
+        <div class="weight">+0.20</div>
+        <div class="desc">Account add page reached via unusual path</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      checkSuspiciousReferrer,
+      checkSyncSetupInstructions,
+      checkRemoteSupportContext,
+      checkProfileCreationSocialEngineering,
+      checkNonStandardAccountFlow,
+      calculateSyncGuardRiskScore,
+    } from '../content/sync_guard.js';
+
+    const logEl = document.getElementById('log');
+
+    function log(msg) {
+      const time = new Date().toISOString().split('T')[1].split('.')[0];
+      logEl.textContent += `\n[${time}] ${msg}`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function verdict(score) {
+      return score >= 0.70 ? 'HIGH RISK \u2014 BLOCKED' : score >= 0.50 ? 'ALERT' : 'PASS';
+    }
+
+    function mockDoc(html, referrer) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      if (referrer !== undefined) {
+        Object.defineProperty(doc, 'referrer', { value: referrer, writable: false });
+      }
+      return doc;
+    }
+
+    document.getElementById('btn-suspicious-referrer').addEventListener('click', () => {
+      log('--- Suspicious referrer simulation ---');
+      log('');
+
+      const doc = mockDoc(
+        '<html><body>Sign in to your Google Account</body></html>',
+        'https://helpdesk.evil-corp.com/ticket/setup-chrome'
+      );
+      const hostname = 'accounts.google.com';
+
+      const referrerSignals = checkSuspiciousReferrer(doc, hostname);
+      const flowSignals = checkNonStandardAccountFlow(doc, hostname);
+      const allSignals = [...referrerSignals, ...flowSignals];
+      const { riskScore, signalList } = calculateSyncGuardRiskScore(allSignals);
+
+      log(`Hostname: ${hostname}`);
+      log(`Referrer: helpdesk.evil-corp.com`);
+      log(`Signals: ${signalList.join(', ') || 'none'}`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log('');
+    });
+
+    document.getElementById('btn-sync-instructions').addEventListener('click', () => {
+      log('--- Sync setup instructions simulation ---');
+      log('');
+
+      const doc = mockDoc(
+        `<html><body>
+          <h1>IT Support Instructions</h1>
+          <p>Please add account to Chrome and turn on sync to complete setup.</p>
+          <p>Use these credentials: support@attacker-corp.com</p>
+          <p>Open TeamViewer and share your screen for verification.</p>
+        </body></html>`,
+        ''
+      );
+
+      const instructionSignals = checkSyncSetupInstructions(doc);
+      const remoteSupportSignals = checkRemoteSupportContext(doc);
+      const profileSignals = checkProfileCreationSocialEngineering(doc);
+      const allSignals = [...instructionSignals, ...remoteSupportSignals, ...profileSignals];
+      const { riskScore, signalList } = calculateSyncGuardRiskScore(allSignals);
+
+      log(`Signals: ${signalList.join(', ') || 'none'}`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log('');
+    });
+
+    document.getElementById('btn-combined').addEventListener('click', () => {
+      log('--- Combined sync hijacking signals (worst case) ---');
+      log('');
+
+      const signals = [
+        { id: 'sync:add_account_suspicious_referrer', weight: 0.40 },
+        { id: 'sync:sync_setup_instructions', weight: 0.35 },
+        { id: 'sync:remote_support_context', weight: 0.30 },
+        { id: 'sync:profile_creation_social_engineering', weight: 0.25 },
+        { id: 'sync:non_standard_account_flow', weight: 0.20 },
+      ];
+      const { riskScore, signalList } = calculateSyncGuardRiskScore(signals);
+
+      log('Simulated: all 5 sync hijacking signals firing');
+      log(`Risk score: ${riskScore.toFixed(2)} (capped at 1.00)`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log(`Signals: ${signalList.join(', ')}`);
+      log('');
+    });
+
+    document.getElementById('btn-legitimate').addEventListener('click', () => {
+      log('--- Legitimate account flow (benign) ---');
+      log('');
+
+      const doc = mockDoc(
+        '<html><body>Sign in to your Google Account</body></html>',
+        'https://myaccount.google.com/security'
+      );
+      const hostname = 'accounts.google.com';
+
+      const referrerSignals = checkSuspiciousReferrer(doc, hostname);
+      const flowSignals = checkNonStandardAccountFlow(doc, hostname);
+      const allSignals = [...referrerSignals, ...flowSignals];
+      const { riskScore } = calculateSyncGuardRiskScore(allSignals);
+
+      log(`Hostname: ${hostname}`);
+      log(`Referrer: myaccount.google.com (trusted)`);
+      log(`Signals: none (trusted referrer)`);
+      log(`Risk score: ${riskScore.toFixed(2)}`);
+      log(`Verdict: ${verdict(riskScore)}`);
+      log('');
+    });
+  </script>
+</body>
+</html>
