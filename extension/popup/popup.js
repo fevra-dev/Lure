@@ -43,6 +43,7 @@ const EVENT_TYPE_LABELS = {
   'SERVICE_WORKER_PERSISTENCE_DETECTED': 'SW Persistence',
   'ETHERHIDING_PAYLOAD_DETECTED': 'EtherHiding Payload',
   'NOTIFICATION_PHISHING_DETECTED': 'Notification Phishing',
+  'WEBTRANSPORT_CREDENTIAL_EXFIL_DETECTED': 'WT Credential Relay',
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -160,6 +161,8 @@ function formatEventDetail(event) {
       return `Score: ${(event.riskScore || 0).toFixed(2)} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
     case 'NOTIFICATION_PHISHING_DETECTED':
       return `Score: ${(event.riskScore || 0).toFixed(2)} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
+    case 'WEBTRANSPORT_CREDENTIAL_EXFIL_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | WT: ${event.wtCount || 0} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
     default:
       return event.signals ? event.signals.join(', ') : '';
   }

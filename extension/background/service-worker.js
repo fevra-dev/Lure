@@ -726,7 +726,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Wave 16: WebTransportGuard events
+  if (message.type === 'WEBTRANSPORTGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
   return false;
 });
 
-console.debug('[PHISHOPS] Service worker loaded — all Wave 1–15 detectors active');
+console.debug('[PHISHOPS] Service worker loaded — all Wave 1–16 detectors active');

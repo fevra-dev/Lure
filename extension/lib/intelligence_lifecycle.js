@@ -300,6 +300,15 @@ export const PRIORITY_INTELLIGENCE_REQUIREMENTS = [
     status: 'active',
     quarterAdded: 'Q1-2026',
   },
+  {
+    id: 'PIR-030',
+    question: 'Are threat actors using WebTransport (QUIC) connections with self-signed certificate hashes to relay credentials in real-time, bypassing WebSocket-based exfiltration detection?',
+    detectors: ['WEBTRANSPORT_CREDENTIAL_EXFIL_DETECTED'],
+    collectionSources: ['WebTransport constructor proxy', 'stream/datagram write monitoring', 'serverCertificateHashes detection on credential pages'],
+    priority: 'high',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -404,6 +413,7 @@ export function correlateEvents(events) {
     new Set(['SERVICE_WORKER_PERSISTENCE_DETECTED', 'PWA_PHISHING_DETECTED', 'PHISHVISION_BRAND_IMPERSONATION']),
     new Set(['ETHERHIDING_PAYLOAD_DETECTED', 'CRYPTO_DRAINER_DETECTED', 'CLICKFIX_CLIPBOARD_INJECTION']),
     new Set(['NOTIFICATION_PHISHING_DETECTED', 'SERVICE_WORKER_PERSISTENCE_DETECTED', 'PHISHVISION_BRAND_IMPERSONATION']),
+    new Set(['WEBTRANSPORT_CREDENTIAL_EXFIL_DETECTED', 'PROXY_AITM_DETECTED', 'WEBSOCKET_CREDENTIAL_EXFIL_DETECTED']),
   ];
 
   for (let i = 0; i < events.length; i++) {

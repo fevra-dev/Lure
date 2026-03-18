@@ -320,6 +320,15 @@ const EVENT_CLASSIFICATION = {
     threatActor: 'Multiple (notification spam campaigns)',
     description: 'Browser notification phishing — fake CAPTCHA/verification lure tricks user into granting notification permission for fake alerts and credential harvesting links',
   },
+
+  // Wave 16: WebTransportGuard
+  WEBTRANSPORT_CREDENTIAL_EXFIL_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1056.003',
+    mitreName: 'Input Capture: Web Portal Capture',
+    threatActor: 'Advanced PhaaS kits (anticipated) / QUIC C2 operators',
+    description: 'WebTransport-based AiTM credential relay — multiplexed QUIC streams with optional self-signed certificate hashes enable low-latency credential exfiltration bypassing WebSocket-based detection',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -641,6 +650,14 @@ function getRecommendedActions(eventType, severity) {
       actions.push('Check if the user clicked any malicious notification links');
       actions.push('If credential harvesting links were clicked: force password reset');
       actions.push('Clear site data for the domain (cookies, storage, Service Workers)');
+      break;
+
+    case 'WEBTRANSPORT_CREDENTIAL_EXFIL_DETECTED':
+      actions.push('Block the WebTransport server domain/IP at network firewall (QUIC/UDP port 443)');
+      actions.push('Assume partial credential compromise — force password reset for the affected user');
+      actions.push('Check if self-signed certificate hashes were used (indicates attacker-controlled infrastructure)');
+      actions.push('Report the phishing page domain to Safe Browsing / PhishTank');
+      actions.push('Search the delivery URL in email/chat logs for additional victims');
       break;
 
     default:
