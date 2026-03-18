@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PhishOps Security Suite",
   "version": "1.0.0",
-  "description": "Browser-native phishing defence: 34 detectors covering OAuth abuse, HTML smuggling, extension supply chain, clipboard injection, fullscreen overlay, passkey theft, QR session hijacking, virtual camera detection, TOAD screen share, brand impersonation, AiTM proxy detection, browser sync hijacking, helpdesk platform abuse, FIDO downgrade attacks, IPFS gateway phishing, LOTL trusted domain abuse, AI-generated phishing detection, EvilnoVNC WebSocket AiTM, and agentic guardrails.",
+  "description": "Browser-native phishing defence: 36 detectors covering OAuth abuse, HTML smuggling, extension supply chain, clipboard injection, fullscreen overlay, passkey theft, QR session hijacking, virtual camera detection, TOAD screen share, brand impersonation, AiTM proxy detection, browser sync hijacking, helpdesk platform abuse, FIDO downgrade attacks, IPFS gateway phishing, LOTL trusted domain abuse, AI-generated phishing detection, EvilnoVNC WebSocket AiTM, WebSocket credential exfiltration, Service Worker persistence, and agentic guardrails.",
 
   "permissions": [
     "storage",
@@ -129,6 +129,16 @@
       "matches": ["<all_urls>"],
       "js": ["content/style_auditor.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/ws_exfil_guard.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/sw_guard.js"],
+      "run_at": "document_start"
     }
   ],
 
@@ -179,7 +189,9 @@
       "wave12_pwaguard": "Progressive Web App install phishing detection (manifest brand mismatch, standalone mode) — content/pwa_guard.js",
       "wave12_tpasentinel": "Third-party app consent phishing detection (high-risk scopes, unverified publisher) — content/tpa_sentinel.js",
       "wave13_drainerguard": "Crypto wallet drainer detection (dangerous eth methods, unlimited approve, multicall) — content/drainer_guard.js",
-      "wave13_styleauditor": "CSS credential exfiltration + LOTL DOM camouflage detection — content/style_auditor.js"
+      "wave13_styleauditor": "CSS credential exfiltration + LOTL DOM camouflage detection — content/style_auditor.js",
+      "wave14_wsexfilguard": "WebSocket credential exfiltration detection (keystroke relay, cross-origin WS, form value leakage) — content/ws_exfil_guard.js",
+      "wave14_swguard": "Service Worker phishing persistence detection (SW registration on cred page, fetch handler, push/sync/cache abuse) — content/sw_guard.js"
     }
   }
 }

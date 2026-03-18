@@ -260,6 +260,26 @@ export const PRIORITY_INTELLIGENCE_REQUIREMENTS = [
     status: 'active',
     quarterAdded: 'Q1-2026',
   },
+
+  // Wave 14: WebSocketExfilGuard + ServiceWorkerGuard
+  {
+    id: 'PIR-026',
+    question: 'Are phishing kits using WebSocket channels to exfiltrate credentials in real-time, bypassing form submission monitoring?',
+    detectors: ['WEBSOCKET_CREDENTIAL_EXFIL_DETECTED'],
+    collectionSources: ['WebSocket constructor proxy', 'WS.send() payload analysis', 'cross-origin WS detection on credential pages'],
+    priority: 'critical',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
+  {
+    id: 'PIR-027',
+    question: 'Are phishing pages registering Service Workers to persist credential harvesting beyond tab closure?',
+    detectors: ['SERVICE_WORKER_PERSISTENCE_DETECTED'],
+    collectionSources: ['ServiceWorkerContainer.register() proxy', 'SW script fetch handler analysis', 'PushManager/SyncManager/Cache API monitoring'],
+    priority: 'high',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -359,6 +379,9 @@ export function correlateEvents(events) {
     new Set(['TPA_CONSENT_PHISHING_DETECTED', 'OAUTH_DEVICE_CODE_FLOW', 'OAUTH_STATE_EMAIL_ENCODED']),
     new Set(['CRYPTO_DRAINER_DETECTED', 'IPFS_PHISHING_DETECTED']),
     new Set(['CSS_CREDENTIAL_EXFIL_DETECTED', 'AUTOFILL_HIDDEN_FIELD_HARVEST', 'PHISHVISION_BRAND_IMPERSONATION']),
+    new Set(['WEBSOCKET_CREDENTIAL_EXFIL_DETECTED', 'PROXY_AITM_DETECTED', 'CSS_CREDENTIAL_EXFIL_DETECTED']),
+    new Set(['SERVICE_WORKER_PERSISTENCE_DETECTED', 'WEBSOCKET_CREDENTIAL_EXFIL_DETECTED', 'LLM_GENERATED_PHISHING_DETECTED']),
+    new Set(['SERVICE_WORKER_PERSISTENCE_DETECTED', 'PWA_PHISHING_DETECTED', 'PHISHVISION_BRAND_IMPERSONATION']),
   ];
 
   for (let i = 0; i < events.length; i++) {

@@ -10,6 +10,7 @@ import {
   checkUniformSentenceLength,
   checkUrgencyPhraseDensity,
   checkLowTypoRateWithCredForm,
+  checkSlopPhraseDensity,
   checkRepetitiveDomStructure,
   checkAiMetaArtifacts,
   calculateLlmRiskScore,
@@ -154,6 +155,122 @@ describe('checkLowTypoRateWithCredForm', () => {
   it('returns empty for null inputs', () => {
     expect(checkLowTypoRateWithCredForm(null, 'text')).toHaveLength(0);
     expect(checkLowTypoRateWithCredForm(makeDoc(), null)).toHaveLength(0);
+  });
+});
+
+/* ================================================================== */
+/*  checkSlopPhraseDensity                                               */
+/* ================================================================== */
+
+describe('checkSlopPhraseDensity', () => {
+  it('detects high-density AI slop phrases (>2.0 per 100 words) with +0.20 weight', () => {
+    // ~50 words, 4 slop hits → density = 8.0 per 100 words
+    const text = [
+      'I hope this email finds you well.',
+      'It is important to note that your account has been temporarily suspended.',
+      'Kindly verify your credentials to restore access.',
+      'Thank you for your continued cooperation.',
+      'We value your business and trust.',
+    ].join(' ');
+    const signals = checkSlopPhraseDensity(text);
+    expect(signals).toHaveLength(1);
+    expect(signals[0].id).toBe('llm:slop_phrase_density');
+    expect(signals[0].weight).toBe(0.20);
+    expect(signals[0].density).toBeGreaterThanOrEqual(2.0);
+  });
+
+  it('detects moderate-density slop phrases (>0.8) with +0.10 weight', () => {
+    // 1 hit in ~120 words → density ≈ 0.83 per 100 words (between 0.8 and 2.0)
+    const filler = Array.from({ length: 110 }, (_, i) => `neutral${i}`).join(' ');
+    const text = `Kindly be advised that we need your attention. ${filler}`;
+    const signals = checkSlopPhraseDensity(text);
+    expect(signals).toHaveLength(1);
+    expect(signals[0].id).toBe('llm:slop_phrase_density');
+    expect(signals[0].weight).toBe(0.10);
+  });
+
+  it('detects throat-clearing openers', () => {
+    const text = "In today's rapidly changing digital world, you must act now. " +
+      Array.from({ length: 30 }, (_, i) => `word${i}`).join(' ');
+    const signals = checkSlopPhraseDensity(text);
+    expect(signals).toHaveLength(1);
+    expect(signals[0].id).toBe('llm:slop_phrase_density');
+  });
+
+  it('detects formal register tells ("please be advised")', () => {
+    const text = "Please be advised that your account requires verification. " +
+      "As per our records, this is mandatory. " +
+      Array.from({ length: 30 }, (_, i) => `word${i}`).join(' ');
+    const signals = checkSlopPhraseDensity(text);
+    expect(signals).toHaveLength(1);
+  });
+
+  it('detects credential lure formulae', () => {
+    const text = "Your account has been locked. " +
+      "Verify your identity by clicking the link below. " +
+      "Failure to do so will result in permanent suspension. " +
+      "For the security of your account, act immediately.";
+    const signals = checkSlopPhraseDensity(text);
+    expect(signals).toHaveLength(1);
+    expect(signals[0].hits).toBeGreaterThanOrEqual(3);
+  });
+
+  it('detects emphasis crutches ("delve into", "seamlessly")', () => {
+    const text = "Let's delve into the details of your account security. " +
+      "We provide a seamless experience for all our users. " +
+      "Unlock the full potential of our platform today. " +
+      Array.from({ length: 30 }, (_, i) => `word${i}`).join(' ');
+    const signals = checkSlopPhraseDensity(text);
+    expect(signals).toHaveLength(1);
+  });
+
+  it('detects performative wrap-up endings', () => {
+    const text = Array.from({ length: 30 }, (_, i) => `word${i}`).join(' ') +
+      " Thank you for your prompt attention. " +
+      "Don't hesitate to contact us. " +
+      "We appreciate your cooperation. " +
+      "Stay safe online.";
+    const signals = checkSlopPhraseDensity(text);
+    expect(signals).toHaveLength(1);
+  });
+
+  it('does NOT flag clean human-written text', () => {
+    const text = 'Hey, just a heads up — we noticed some unusual login attempts on your account ' +
+      'from an IP in Eastern Europe. Changed your password yet? If not, I can walk you through it. ' +
+      'The security team already blocked the IP but better safe than sorry. Let me know if you ' +
+      'need anything. Cheers, Mike.';
+    expect(checkSlopPhraseDensity(text)).toHaveLength(0);
+  });
+
+  it('does NOT flag text with zero slop phrases', () => {
+    const text = Array.from({ length: 100 }, (_, i) => `word${i}`).join(' ');
+    expect(checkSlopPhraseDensity(text)).toHaveLength(0);
+  });
+
+  it('returns empty for text shorter than 30 words', () => {
+    const text = 'Kindly verify your account. Thank you for your cooperation.';
+    expect(checkSlopPhraseDensity(text)).toHaveLength(0);
+  });
+
+  it('returns empty for empty/null input', () => {
+    expect(checkSlopPhraseDensity('')).toHaveLength(0);
+    expect(checkSlopPhraseDensity(null)).toHaveLength(0);
+  });
+
+  it('returns matched patterns in signal metadata', () => {
+    const text = [
+      'I hope this email finds you well.',
+      'Kindly note that your account has been flagged.',
+      'Verify your identity by clicking the link below.',
+      'Failure to do so will result in account closure.',
+      'For the security of your account please act now.',
+      'Thank you for your continued patience.',
+      'We value your trust and cooperation.',
+    ].join(' ');
+    const signals = checkSlopPhraseDensity(text);
+    expect(signals).toHaveLength(1);
+    expect(signals[0].matched).toBeDefined();
+    expect(signals[0].matched.length).toBeGreaterThan(0);
   });
 });
 

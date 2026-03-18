@@ -284,6 +284,24 @@ const EVENT_CLASSIFICATION = {
     threatActor: 'Advanced phishing kit authors',
     description: 'CSS-based credential exfiltration or LOTL DOM camouflage — input[value] attribute selectors with url() or hidden iframe/form credential harvesting',
   },
+
+  // Wave 14: WebSocketExfilGuard
+  WEBSOCKET_CREDENTIAL_EXFIL_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1056.003',
+    mitreName: 'Input Capture: Web Portal Capture',
+    threatActor: 'EvilProxy derivatives / Modlishka 2.0+ / custom PhaaS kits',
+    description: 'Real-time credential exfiltration via WebSocket — keystroke relay, cross-origin WS channels, or form value leakage on credential pages',
+  },
+
+  // Wave 14: ServiceWorkerGuard
+  SERVICE_WORKER_PERSISTENCE_DETECTED: {
+    category: 'malicious_code',
+    mitreAttack: 'T1176',
+    mitreName: 'Browser Extensions',
+    threatActor: 'Advanced phishing kits / watering-hole campaigns',
+    description: 'Service Worker persistence on credential page — phishing form caching, fetch interception for credential relay, push re-engagement, or background sync C2 callback',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -573,6 +591,22 @@ function getRecommendedActions(eventType, severity) {
       actions.push('If credentials compromised: force password reset for the affected user');
       actions.push('Report the CSS exfiltration technique to Safe Browsing / PhishTank');
       actions.push('Review browser autofill settings to restrict cross-origin autofill');
+      break;
+
+    case 'WEBSOCKET_CREDENTIAL_EXFIL_DETECTED':
+      actions.push('Block the WebSocket C2 server domain/IP at network firewall');
+      actions.push('Assume partial credential compromise — force password reset for the affected user');
+      actions.push('Check if keystroke data was relayed before the user completed entry');
+      actions.push('Report the phishing page domain to Safe Browsing / PhishTank');
+      actions.push('Search for the delivery URL in email/chat logs for additional victims');
+      break;
+
+    case 'SERVICE_WORKER_PERSISTENCE_DETECTED':
+      actions.push('Navigate to chrome://serviceworker-internals and unregister the suspicious SW');
+      actions.push('Clear site data for the affected domain (cookies, cache, storage)');
+      actions.push('If credentials were entered: force password reset for the affected user');
+      actions.push('Block the phishing domain at DNS/web proxy');
+      actions.push('Check push notification subscriptions for the domain and revoke them');
       break;
 
     default:

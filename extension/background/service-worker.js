@@ -682,7 +682,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Wave 14: WebSocketExfilGuard events
+  if (message.type === 'WSEXFILGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 14: ServiceWorkerGuard events
+  if (message.type === 'SWGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
   return false;
 });
 
-console.debug('[PHISHOPS] Service worker loaded — all Wave 1–13 detectors active');
+console.debug('[PHISHOPS] Service worker loaded — all Wave 1–14 detectors active');

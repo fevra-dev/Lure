@@ -39,6 +39,8 @@ const EVENT_TYPE_LABELS = {
   'TPA_CONSENT_PHISHING_DETECTED': 'Consent Phishing',
   'CRYPTO_DRAINER_DETECTED': 'Wallet Drainer',
   'CSS_CREDENTIAL_EXFIL_DETECTED': 'CSS Exfiltration',
+  'WEBSOCKET_CREDENTIAL_EXFIL_DETECTED': 'WS Credential Exfil',
+  'SERVICE_WORKER_PERSISTENCE_DETECTED': 'SW Persistence',
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -148,6 +150,10 @@ function formatEventDetail(event) {
       return `Score: ${(event.riskScore || 0).toFixed(2)} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
     case 'CSS_CREDENTIAL_EXFIL_DETECTED':
       return `Score: ${(event.riskScore || 0).toFixed(2)} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
+    case 'WEBSOCKET_CREDENTIAL_EXFIL_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | WS: ${event.wsCount || 0} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
+    case 'SERVICE_WORKER_PERSISTENCE_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | SW: ${event.swScriptUrl || '?'} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
     default:
       return event.signals ? event.signals.join(', ') : '';
   }

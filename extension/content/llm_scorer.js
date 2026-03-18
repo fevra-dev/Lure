@@ -14,6 +14,7 @@
  *   llm:uniform_sentence_length       +0.30
  *   llm:urgency_phrase_density        +0.25
  *   llm:low_typo_rate_with_cred_form  +0.25
+ *   llm:slop_phrase_density           +0.20
  *   llm:repetitive_dom_structure      +0.20
  *   llm:ai_meta_artifacts             +0.15
  *
@@ -44,6 +45,49 @@ const AI_META_PATTERNS = [
   /\bGPT-[34]\b/i,
   /content[- ]?type.*ai[- ]generated/i,
 ];
+
+/**
+ * AI writing tells derived from stop-slop (github.com/hardikpandya/stop-slop).
+ * Inverted from a suppression blocklist into a detection dictionary.
+ * Filtered for phishing relevance — excludes creative-writing-only patterns.
+ */
+const AI_SLOP_PHRASES = [
+  // Openers — throat-clearing
+  /\bin today'?s (?:digital|rapidly|fast[- ]paced|ever[- ]changing)/i,
+  /\bit'?s (?:important|worth noting|crucial) to (?:note|understand|remember)/i,
+  /\bi hope this (?:email|message) finds you well/i,
+  // Formal register tells
+  /\bkindly (?:be advised|note|ensure|verify|confirm)/i,
+  /\bplease be advised that\b/i,
+  /\bas per (?:our|the|your) (?:records?|policy|conversation)/i,
+  /\bwe (?:would like to|wish to) (?:inform|notify|advise) you/i,
+  /\bthis (?:serves as|is to) (?:notify|inform|remind)/i,
+  // Credential lure formulae
+  /\byour account has been (?:temporarily |permanently )?(?:suspended|locked|restricted|limited|compromised|flagged)/i,
+  /\bverify your (?:identity|account|information|credentials) (?:to (?:restore|regain|maintain)|by clicking)/i,
+  /\bfailure to (?:do so|comply|respond|verify|update) (?:will|may) result in/i,
+  /\bfor (?:your|the) (?:security|safety|protection) of your account/i,
+  // Emphasis crutches — vague intensifiers LLMs overuse
+  /\bdelve (?:into|deeper)\b/i,
+  /\btapestry of\b/i,
+  /\blandscape of\b/i,
+  /\bunlock (?:the (?:full |true )?potential|new possibilities)\b/i,
+  /\bseamless(?:ly)? (?:integrate|transition|experience)\b/i,
+  /\beverything you need to know\b/i,
+  // Structural clichés
+  /\bin (?:today'?s|this) (?:article|guide|post),? (?:we|i|you) will\b/i,
+  /\blet'?s (?:dive|explore|take a (?:look|closer look|deep dive))\b/i,
+  /\bwithout further (?:ado|delay)\b/i,
+  // Endings — performative wrap-ups
+  /\bthank you for your (?:continued |ongoing )?(?:cooperation|patience|understanding|prompt (?:attention|action))/i,
+  /\bdon'?t hesitate to (?:reach out|contact us|get in touch)\b/i,
+  /\bwe (?:value|appreciate) your (?:business|trust|cooperation|loyalty)\b/i,
+  /\bstay (?:safe|vigilant|informed|tuned) (?:online|out there|and)\b/i,
+];
+
+const SLOP_DENSITY_HIGH_THRESHOLD = 2.0;   // hits per 100 words
+const SLOP_DENSITY_MODERATE_THRESHOLD = 0.8;
+const SLOP_MIN_WORD_COUNT = 30;
 
 const SENTENCE_LENGTH_CV_THRESHOLD = 0.15;
 const MIN_SENTENCES_FOR_ANALYSIS = 10;
@@ -248,6 +292,48 @@ export function checkAiMetaArtifacts(doc) {
   return [];
 }
 
+/**
+ * Check for AI-typical "slop" phrases — writing tells that LLMs overuse.
+ * Derived from stop-slop (github.com/hardikpandya/stop-slop), inverted from
+ * a suppression blocklist into a detection dictionary. Scored by density:
+ * hits per 100 words. >2.0 = high confidence (+0.20), >0.8 = moderate (+0.10).
+ */
+export function checkSlopPhraseDensity(bodyText) {
+  if (!bodyText) return [];
+
+  const words = bodyText.split(/\s+/).filter(w => w.length > 0);
+  if (words.length < SLOP_MIN_WORD_COUNT) return [];
+
+  let hits = 0;
+  const matched = [];
+
+  for (const pattern of AI_SLOP_PHRASES) {
+    const matches = bodyText.match(new RegExp(pattern.source, 'gi'));
+    if (matches) {
+      hits += matches.length;
+      matched.push(pattern.source.substring(0, 40));
+    }
+  }
+
+  if (hits === 0) return [];
+
+  const density = (hits / words.length) * 100;
+
+  if (density >= SLOP_DENSITY_MODERATE_THRESHOLD) {
+    const weight = density >= SLOP_DENSITY_HIGH_THRESHOLD ? 0.20 : 0.10;
+    return [{
+      id: 'llm:slop_phrase_density',
+      weight,
+      hits,
+      density,
+      wordCount: words.length,
+      matched: matched.slice(0, 5),
+    }];
+  }
+
+  return [];
+}
+
 /* ------------------------------------------------------------------ */
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
@@ -326,6 +412,7 @@ export function runLlmScorerAnalysis() {
   const sentenceSignals = checkUniformSentenceLength(bodyText);
   const urgencySignals = checkUrgencyPhraseDensity(bodyText);
   const typoSignals = checkLowTypoRateWithCredForm(doc, bodyText);
+  const slopSignals = checkSlopPhraseDensity(bodyText);
   const domSignals = checkRepetitiveDomStructure(doc);
   const metaSignals = checkAiMetaArtifacts(doc);
 
@@ -333,6 +420,7 @@ export function runLlmScorerAnalysis() {
     ...sentenceSignals,
     ...urgencySignals,
     ...typoSignals,
+    ...slopSignals,
     ...domSignals,
     ...metaSignals,
   ];
