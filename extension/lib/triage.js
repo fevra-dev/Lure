@@ -329,6 +329,33 @@ const EVENT_CLASSIFICATION = {
     threatActor: 'Advanced PhaaS kits (anticipated) / QUIC C2 operators',
     description: 'WebTransport-based AiTM credential relay — multiplexed QUIC streams with optional self-signed certificate hashes enable low-latency credential exfiltration bypassing WebSocket-based detection',
   },
+
+  // Wave 17: CanvasPhishGuard
+  CANVAS_CREDENTIAL_PHISHING_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1056.003',
+    mitreName: 'Input Capture: Web Portal Capture',
+    threatActor: 'Advanced phishing kits (anticipated) / Flutter Web abuse',
+    description: 'Canvas-rendered credential phishing — login form rendered entirely on <canvas> with zero DOM input fields, bypassing all DOM-based phishing detection',
+  },
+
+  // Wave 18: CanvasKeystrokeGuard
+  CANVAS_KEYSTROKE_CAPTURE_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1056.003',
+    mitreName: 'Input Capture: Web Portal Capture',
+    threatActor: 'Advanced phishing kits (anticipated) / Flutter Web abuse',
+    description: 'Canvas keystroke capture detected — keyboard event listeners attached to canvas elements with no DOM credential inputs, indicating credential harvesting via canvas-rendered login form',
+  },
+
+  // Wave 18: CanvasExfilGuard
+  CANVAS_CREDENTIAL_EXFIL_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1041',
+    mitreName: 'Exfiltration Over C2 Channel',
+    threatActor: 'Advanced phishing kits (anticipated) / Flutter Web abuse',
+    description: 'Canvas credential exfiltration detected — credential-shaped POST data sent from page with canvas-rendered UI and no DOM input fields',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -657,6 +684,30 @@ function getRecommendedActions(eventType, severity) {
       actions.push('Assume partial credential compromise — force password reset for the affected user');
       actions.push('Check if self-signed certificate hashes were used (indicates attacker-controlled infrastructure)');
       actions.push('Report the phishing page domain to Safe Browsing / PhishTank');
+      actions.push('Search the delivery URL in email/chat logs for additional victims');
+      break;
+
+    case 'CANVAS_CREDENTIAL_PHISHING_DETECTED':
+      actions.push('Block the phishing page domain at DNS/web proxy');
+      actions.push('Assume credential compromise if the user interacted with the canvas — force password reset');
+      actions.push('Check if Flutter CanvasKit WASM was loaded (indicates sophisticated kit)');
+      actions.push('Report the domain to Safe Browsing / PhishTank');
+      actions.push('Search the delivery URL in email/chat logs for additional victims');
+      break;
+
+    case 'CANVAS_KEYSTROKE_CAPTURE_DETECTED':
+      actions.push('Block the phishing page domain at DNS/web proxy');
+      actions.push('Assume credential compromise if the user typed into the canvas — force password reset');
+      actions.push('Check if Flutter CanvasKit WASM or Canvas UI framework was loaded');
+      actions.push('Report the domain to Safe Browsing / PhishTank');
+      actions.push('Search the delivery URL in email/chat logs for additional victims');
+      break;
+
+    case 'CANVAS_CREDENTIAL_EXFIL_DETECTED':
+      actions.push('Block the exfiltration endpoint domain/IP at network firewall');
+      actions.push('Assume credential compromise — force password reset for the affected user');
+      actions.push('Capture and analyse the exfiltration POST payload for credential data');
+      actions.push('Block the phishing page domain at DNS/web proxy');
       actions.push('Search the delivery URL in email/chat logs for additional victims');
       break;
 

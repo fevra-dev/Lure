@@ -1,17 +1,18 @@
 # PhishOps Security Suite
 
-A browser-native phishing defence platform built for SOC teams. 38 real-time detection modules in a Chrome MV3 extension covering the full phishing kill chain — from delivery through credential harvest to persistence — paired with a Python email analysis CLI that produces verdicts from raw `.eml` files.
+A browser-native phishing defence platform built for SOC teams. 42 real-time detection modules in a Chrome MV3 extension covering the full phishing kill chain — from delivery through credential harvest to persistence — paired with a Python email analysis CLI that produces verdicts from raw `.eml` files.
 
 ## Architecture
 
 ```mermaid
 graph TB
-    subgraph "Chrome Extension — 38 Detectors, 15 Waves"
+    subgraph "Chrome Extension — 42 Detectors, 18 Waves"
         SW[Service Worker<br/>Message Router + Triage Engine] --> W1[Wave 1–3: Foundation<br/>OAuthGuard · DataEgress · ExtensionAuditor · AgentIntentGuard]
         SW --> W2[Wave 4–6: Interaction Layer<br/>AutofillGuard · ClipboardDefender · FullscreenGuard<br/>PasskeyGuard · QRLjackingGuard]
         SW --> W3[Wave 7–9: Social Engineering<br/>WebRTCGuard · ScreenShareGuard · PhishVision<br/>ProxyGuard · SyncGuard · FakeSender]
         SW --> W4[Wave 10–12: Evasion<br/>CTAPGuard · IPFSGuard · LLMScorer<br/>VNCGuard · PWAGuard · TPASentinel]
         SW --> W5[Wave 13–15: Exfil + Persistence<br/>DrainerGuard · StyleAuditor · WsExfilGuard<br/>SwGuard · EtherHidingGuard · NotificationGuard]
+        SW --> W6[Wave 16–18: Next-Gen<br/>WebTransportGuard · CanvasPhishGuard<br/>CanvasKeystrokeGuard · CanvasExfilGuard]
     end
 
     subgraph "Lure CLI — Email Analysis Pipeline"
@@ -24,7 +25,7 @@ graph TB
 
     subgraph "Intelligence Layer"
         SW --> TRI[Triage Engine<br/>NIST 800-61r3 · MITRE ATT&CK]
-        SW --> INT[Intelligence Lifecycle<br/>29 PIRs · 23 Correlation Sets]
+        SW --> INT[Intelligence Lifecycle<br/>33 PIRs · 27 Correlation Sets]
         SW --> TEL[Telemetry<br/>chrome.storage.local]
         TEL --> POP[Popup Dashboard]
         TEL -.->|Production| DCR[Azure Monitor DCR]
@@ -33,7 +34,7 @@ graph TB
 
 ## Detector Inventory
 
-38 detectors across 15 implementation waves, each with additive signal scoring (alert at 0.50, block at 0.70, cap 1.0).
+42 detectors across 18 implementation waves, each with additive signal scoring (alert at 0.50, block at 0.70, cap 1.0).
 
 | Wave | Detector | Threat | MITRE ATT&CK | Injection |
 |------|----------|--------|--------------|-----------|
@@ -68,6 +69,10 @@ graph TB
 | 14 | SwGuard — Service Worker Persistence | Watering-hole campaigns | T1176 | document_start |
 | 15 | EtherHidingGuard — Blockchain Payload Delivery | ClearFake / ClickFix | T1059.007 | document_start |
 | 15 | NotificationGuard — Push Notification Phishing | Multiple | T1204.001 | document_start |
+| 16 | WebTransportGuard — WebTransport AiTM Relay | Advanced PhaaS kits | T1056.003 | document_start |
+| 17 | CanvasPhishGuard — Canvas Credential Phishing | Advanced kits / Flutter Web | T1056.003 | document_idle |
+| 18 | CanvasKeystrokeGuard — Canvas Keystroke Capture | Advanced kits / Flutter Web | T1056.003 | document_start (MAIN world) |
+| 18 | CanvasExfilGuard — Canvas Credential Exfiltration | Advanced kits / Flutter Web | T1041 | document_start |
 
 ## Signal Scoring Model
 
@@ -78,15 +83,15 @@ Every detector uses the same additive scoring framework:
 - **Severity**: >= 0.90 Critical, >= 0.70 High, >= 0.50 Medium
 - **Action**: >= 0.70 blocked (fields disabled, banner injected), >= 0.50 alerted
 
-Example from EtherHidingGuard:
+Example from WebTransportGuard:
 
 | Signal | Weight | Trigger |
 |--------|--------|---------|
-| `etherhide:rpc_call_to_blockchain_endpoint` | +0.40 | fetch/XHR POST to BSC/ETH RPC with eth_call |
-| `etherhide:eth_call_response_injected` | +0.30 | Decoded ABI response found in DOM injection |
-| `etherhide:contract_address_in_inline_script` | +0.25 | 0x + 40 hex + RPC method in inline script |
-| `etherhide:web3_library_on_non_dapp` | +0.20 | ethers.js/web3.js without DApp UI |
-| `etherhide:dynamic_script_from_rpc_response` | +0.15 | Dynamic script content matches RPC response |
+| `wt:transport_on_credential_page` | +0.40 | WebTransport connection on page with credential fields |
+| `wt:self_signed_cert_hashes` | +0.30 | `serverCertificateHashes` option used (self-signed certs) |
+| `wt:cross_origin_transport_with_creds` | +0.25 | WebTransport target hostname differs from page origin |
+| `wt:credential_data_in_stream` | +0.20 | Input field value found in stream/datagram write |
+| `wt:transport_without_media_context` | +0.15 | WebTransport without video/streaming UI |
 
 ## Intelligence Layer
 
@@ -94,7 +99,7 @@ Every detection event is enriched by two engines before persistence:
 
 **Triage Engine** (`lib/triage.js`) — NIST SP 800-61r3 classification with MITRE ATT&CK mapping, SANS PICERL priority/SLA assignment, and recommended containment actions per event type.
 
-**Intelligence Lifecycle** (`lib/intelligence_lifecycle.js`) — 29 Priority Intelligence Requirements (PIRs), confidence scoring, deduplication, 23 correlation sets for campaign grouping, and tactical intelligence summary generation.
+**Intelligence Lifecycle** (`lib/intelligence_lifecycle.js`) — 33 Priority Intelligence Requirements (PIRs), confidence scoring, deduplication, 27 correlation sets for campaign grouping, and tactical intelligence summary generation.
 
 ## Quick Start
 
@@ -113,7 +118,7 @@ cd lur3
 ### Run Tests
 
 ```bash
-# Extension tests (Vitest) — 676 tests across 20 passing suites
+# Extension tests (Vitest) — 841+ tests across 24 passing suites (Waves 11–18)
 npx vitest run extension/__tests__/
 
 # Lure tests (pytest)
@@ -136,12 +141,12 @@ Email analysis pipeline producing categorical verdicts from raw `.eml` files.
 ```
 lur3/
 ├── extension/                  # Chrome MV3 extension
-│   ├── manifest.json           # v1.0.0, 38 detectors
-│   ├── background/             # Service worker (Wave 1–15 message routing)
-│   ├── content/                # 26 content scripts
+│   ├── manifest.json           # v1.0.0, 42 detectors
+│   ├── background/             # Service worker (Wave 1–18 message routing)
+│   ├── content/                # 31 content scripts
 │   ├── lib/                    # triage.js, intelligence_lifecycle.js, telemetry.js
 │   ├── popup/                  # Dashboard UI (Dieter Rams / Braun design)
-│   └── __tests__/              # 28 Vitest test files, 676 passing tests
+│   └── __tests__/              # 32 Vitest test files
 │
 ├── lure/                       # Email analysis CLI
 │   ├── lure/modules/           # parser, extractor, scanner, scorer
@@ -149,6 +154,7 @@ lur3/
 │   └── tests/                  # pytest tests
 │
 ├── CUTTING_EDGE_DETECTORS.md   # Brainstorm — next-gen detection candidates
+├── RESEARCH_PROMPTS.md         # Structured research prompts for next-gen detectors
 └── THREAT_INTELLIGENCE.md      # Detector → threat intel source mapping
 ```
 

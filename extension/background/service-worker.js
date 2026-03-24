@@ -737,7 +737,40 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Wave 17: CanvasPhishGuard events
+  if (message.type === 'CANVASPHISHGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 18: CanvasKeystrokeGuard events
+  if (message.type === 'CANVASKEYSTROKEGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 18: CanvasExfilGuard events
+  if (message.type === 'CANVASEXFILGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
   return false;
 });
 
-console.debug('[PHISHOPS] Service worker loaded — all Wave 1–16 detectors active');
+console.debug('[PHISHOPS] Service worker loaded — all Wave 1–18 detectors active');

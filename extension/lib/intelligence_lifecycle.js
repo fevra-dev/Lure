@@ -309,6 +309,35 @@ export const PRIORITY_INTELLIGENCE_REQUIREMENTS = [
     status: 'active',
     quarterAdded: 'Q1-2026',
   },
+  {
+    id: 'PIR-031',
+    question: 'Are threat actors using canvas-rendered login forms (Canvas 2D or Flutter Web CanvasKit) to bypass DOM-based phishing detection?',
+    detectors: ['CANVAS_CREDENTIAL_PHISHING_DETECTED', 'CANVAS_KEYSTROKE_CAPTURE_DETECTED', 'CANVAS_CREDENTIAL_EXFIL_DETECTED'],
+    collectionSources: ['DOM heuristic analysis at document_idle', 'canvas element detection', 'Flutter/CanvasKit WASM detection', 'game engine exclusion'],
+    priority: 'high',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
+
+  // Wave 18: CanvasKeystrokeGuard + CanvasExfilGuard
+  {
+    id: 'PIR-032',
+    question: 'Are threat actors attaching keyboard event listeners to canvas elements to capture credentials typed into canvas-rendered login forms, bypassing DOM input monitoring?',
+    detectors: ['CANVAS_KEYSTROKE_CAPTURE_DETECTED'],
+    collectionSources: ['EventTarget.prototype.addEventListener proxy (MAIN world)', 'HTMLCanvasElement.prototype.getContext proxy', 'canvas keyboard listener enumeration'],
+    priority: 'critical',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
+  {
+    id: 'PIR-033',
+    question: 'Are threat actors exfiltrating credentials via fetch/XHR/sendBeacon from pages that use canvas-rendered login forms with no DOM input fields?',
+    detectors: ['CANVAS_CREDENTIAL_EXFIL_DETECTED'],
+    collectionSources: ['fetch/XHR/sendBeacon proxy', 'Image constructor proxy', 'credential-shaped POST payload analysis'],
+    priority: 'high',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -414,6 +443,9 @@ export function correlateEvents(events) {
     new Set(['ETHERHIDING_PAYLOAD_DETECTED', 'CRYPTO_DRAINER_DETECTED', 'CLICKFIX_CLIPBOARD_INJECTION']),
     new Set(['NOTIFICATION_PHISHING_DETECTED', 'SERVICE_WORKER_PERSISTENCE_DETECTED', 'PHISHVISION_BRAND_IMPERSONATION']),
     new Set(['WEBTRANSPORT_CREDENTIAL_EXFIL_DETECTED', 'PROXY_AITM_DETECTED', 'WEBSOCKET_CREDENTIAL_EXFIL_DETECTED']),
+    new Set(['CANVAS_CREDENTIAL_PHISHING_DETECTED', 'PHISHVISION_BRAND_IMPERSONATION', 'LLM_GENERATED_PHISHING_DETECTED']),
+    new Set(['CANVAS_CREDENTIAL_PHISHING_DETECTED', 'CANVAS_KEYSTROKE_CAPTURE_DETECTED', 'CANVAS_CREDENTIAL_EXFIL_DETECTED']),
+    new Set(['CANVAS_KEYSTROKE_CAPTURE_DETECTED', 'CANVAS_CREDENTIAL_EXFIL_DETECTED', 'WEBSOCKET_CREDENTIAL_EXFIL_DETECTED']),
   ];
 
   for (let i = 0; i < events.length; i++) {

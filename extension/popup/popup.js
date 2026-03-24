@@ -44,6 +44,9 @@ const EVENT_TYPE_LABELS = {
   'ETHERHIDING_PAYLOAD_DETECTED': 'EtherHiding Payload',
   'NOTIFICATION_PHISHING_DETECTED': 'Notification Phishing',
   'WEBTRANSPORT_CREDENTIAL_EXFIL_DETECTED': 'WT Credential Relay',
+  'CANVAS_CREDENTIAL_PHISHING_DETECTED': 'Canvas Credential Phish',
+  'CANVAS_KEYSTROKE_CAPTURE_DETECTED': 'Canvas Keystroke Capture',
+  'CANVAS_CREDENTIAL_EXFIL_DETECTED': 'Canvas Credential Exfil',
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -163,6 +166,12 @@ function formatEventDetail(event) {
       return `Score: ${(event.riskScore || 0).toFixed(2)} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
     case 'WEBTRANSPORT_CREDENTIAL_EXFIL_DETECTED':
       return `Score: ${(event.riskScore || 0).toFixed(2)} | WT: ${event.wtCount || 0} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
+    case 'CANVAS_CREDENTIAL_PHISHING_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | Canvas: ${event.canvasCount || 0} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
+    case 'CANVAS_KEYSTROKE_CAPTURE_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | Listeners: ${event.listenerCount || 0} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
+    case 'CANVAS_CREDENTIAL_EXFIL_DETECTED':
+      return `Score: ${(event.riskScore || 0).toFixed(2)} | Exfil: ${event.exfilCount || 0} | ${(event.signals || []).slice(0, 2).join(', ')} | Action: ${event.action || '?'}`;
     default:
       return event.signals ? event.signals.join(', ') : '';
   }
