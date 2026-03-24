@@ -356,6 +356,15 @@ const EVENT_CLASSIFICATION = {
     threatActor: 'Advanced phishing kits (anticipated) / Flutter Web abuse',
     description: 'Canvas credential exfiltration detected — credential-shaped POST data sent from page with canvas-rendered UI and no DOM input fields',
   },
+
+  // Wave 19: SpeculationRulesGuard
+  SPECULATION_RULES_PHISHING_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1598.003',
+    mitreName: 'Phishing for Information: Spearphishing Link',
+    threatActor: 'Advanced phishing kits using Speculation Rules API for instant prerender phishing',
+    description: 'Speculation Rules API abuse detected — cross-origin prerender/prefetch rules injected to pre-load phishing content with instant activation, bypassing traditional navigation-based detection',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -708,6 +717,14 @@ function getRecommendedActions(eventType, severity) {
       actions.push('Assume credential compromise — force password reset for the affected user');
       actions.push('Capture and analyse the exfiltration POST payload for credential data');
       actions.push('Block the phishing page domain at DNS/web proxy');
+      actions.push('Search the delivery URL in email/chat logs for additional victims');
+      break;
+
+    case 'SPECULATION_RULES_PHISHING_DETECTED':
+      actions.push('Block the prerender/prefetch target domain at DNS/web proxy');
+      actions.push('Investigate XSS injection vector if rules were dynamically added — check source page for stored/reflected XSS');
+      actions.push('If credentials were entered on the prerendered page: force password reset for the affected user');
+      actions.push('Report the phishing domain to Safe Browsing / PhishTank');
       actions.push('Search the delivery URL in email/chat logs for additional victims');
       break;
 

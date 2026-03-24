@@ -338,6 +338,17 @@ export const PRIORITY_INTELLIGENCE_REQUIREMENTS = [
     status: 'active',
     quarterAdded: 'Q1-2026',
   },
+
+  // Wave 19: SpeculationRulesGuard
+  {
+    id: 'PIR-034',
+    question: 'Are threat actors abusing the Speculation Rules API to prerender or prefetch phishing pages, enabling instant activation from compromised or XSS-injected same-origin pages?',
+    detectors: ['SPECULATION_RULES_PHISHING_DETECTED'],
+    collectionSources: ['MutationObserver on script[type=speculationrules]', 'static DOM enumeration at document_start', 'cross-origin URL analysis', 'prerender lifecycle awareness'],
+    priority: 'high',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -446,6 +457,7 @@ export function correlateEvents(events) {
     new Set(['CANVAS_CREDENTIAL_PHISHING_DETECTED', 'PHISHVISION_BRAND_IMPERSONATION', 'LLM_GENERATED_PHISHING_DETECTED']),
     new Set(['CANVAS_CREDENTIAL_PHISHING_DETECTED', 'CANVAS_KEYSTROKE_CAPTURE_DETECTED', 'CANVAS_CREDENTIAL_EXFIL_DETECTED']),
     new Set(['CANVAS_KEYSTROKE_CAPTURE_DETECTED', 'CANVAS_CREDENTIAL_EXFIL_DETECTED', 'WEBSOCKET_CREDENTIAL_EXFIL_DETECTED']),
+    new Set(['SPECULATION_RULES_PHISHING_DETECTED', 'LLM_GENERATED_PHISHING_DETECTED', 'PHISHVISION_BRAND_IMPERSONATION']),
   ];
 
   for (let i = 0; i < events.length; i++) {

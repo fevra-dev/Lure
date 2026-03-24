@@ -770,7 +770,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Wave 19: SpeculationRulesGuard events
+  if (message.type === 'SPECULATIONRULESGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
   return false;
 });
 
-console.debug('[PHISHOPS] Service worker loaded — all Wave 1–18 detectors active');
+console.debug('[PHISHOPS] Service worker loaded — all Wave 1–19 detectors active');

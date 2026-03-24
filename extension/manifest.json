@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PhishOps Security Suite",
   "version": "1.0.0",
-  "description": "Browser-native phishing defence: 42 detectors covering OAuth abuse, HTML smuggling, extension supply chain, clipboard injection, fullscreen overlay, passkey theft, QR session hijacking, virtual camera detection, TOAD screen share, brand impersonation, AiTM proxy detection, browser sync hijacking, helpdesk platform abuse, FIDO downgrade attacks, IPFS gateway phishing, LOTL trusted domain abuse, AI-generated phishing detection, EvilnoVNC WebSocket AiTM, WebSocket credential exfiltration, Service Worker persistence, blockchain-hosted phishing (EtherHiding), notification abuse, WebTransport AiTM relay, canvas credential phishing, canvas keystroke capture, canvas credential exfiltration, and agentic guardrails.",
+  "description": "Browser-native phishing defence: 43 detectors covering OAuth abuse, HTML smuggling, extension supply chain, clipboard injection, fullscreen overlay, passkey theft, QR session hijacking, virtual camera detection, TOAD screen share, brand impersonation, AiTM proxy detection, browser sync hijacking, helpdesk platform abuse, FIDO downgrade attacks, IPFS gateway phishing, LOTL trusted domain abuse, AI-generated phishing detection, EvilnoVNC WebSocket AiTM, WebSocket credential exfiltration, Service Worker persistence, blockchain-hosted phishing (EtherHiding), notification abuse, WebTransport AiTM relay, canvas credential phishing, canvas keystroke capture, canvas credential exfiltration, Speculation Rules API phishing, and agentic guardrails.",
 
   "permissions": [
     "storage",
@@ -175,6 +175,11 @@
       "matches": ["<all_urls>"],
       "js": ["content/canvas_exfil_guard.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/speculation_rules_guard.js"],
+      "run_at": "document_start"
     }
   ],
 
@@ -233,7 +238,8 @@
       "wave16_webtransportguard": "WebTransport AiTM credential relay detection (self-signed cert hashes, cross-origin transport, stream data exfil) — content/webtransport_guard.js",
       "wave17_canvasphishguard": "Canvas-rendered credential phishing detection (canvas login context, Flutter/CanvasKit WASM, low DOM complexity, game engine exclusion) — content/canvas_phish_guard.js",
       "wave18_canvaskeystrokeguard": "Canvas keyboard listener interception + context type tracking (MAIN world API proxying) — content/canvas_keystroke_guard_main.js + bridge",
-      "wave18_canvasexfilguard": "Canvas credential exfiltration detection (fetch/XHR/sendBeacon/Image POST monitoring on canvas-dominated pages) — content/canvas_exfil_guard.js"
+      "wave18_canvasexfilguard": "Canvas credential exfiltration detection (fetch/XHR/sendBeacon/Image POST monitoring on canvas-dominated pages) — content/canvas_exfil_guard.js",
+      "wave19_speculationrulesguard": "Speculation Rules API phishing detection (cross-origin prerender/prefetch, dynamic injection, suspicious URL patterns, active defense via element removal) — content/speculation_rules_guard.js"
     }
   }
 }
