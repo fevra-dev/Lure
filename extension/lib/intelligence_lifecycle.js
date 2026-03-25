@@ -349,6 +349,17 @@ export const PRIORITY_INTELLIGENCE_REQUIREMENTS = [
     status: 'active',
     quarterAdded: 'Q1-2026',
   },
+
+  // Wave 20: ProbeGuard
+  {
+    id: 'PIR-035',
+    question: 'Are phishing pages probing for the presence of security browser extensions via toString reflection, cross-frame verification, API timing analysis, WAR fingerprinting, or prototype lie detection?',
+    detectors: ['EXTENSION_PROBE_DETECTED'],
+    collectionSources: ['Function.prototype.toString interception', 'iframe contentWindow access monitoring', 'performance.now() frequency analysis', 'chrome-extension:// URL request detection', 'Object.getOwnPropertyDescriptor monitoring'],
+    priority: 'high',
+    status: 'active',
+    quarterAdded: 'Q1-2026',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -458,6 +469,7 @@ export function correlateEvents(events) {
     new Set(['CANVAS_CREDENTIAL_PHISHING_DETECTED', 'CANVAS_KEYSTROKE_CAPTURE_DETECTED', 'CANVAS_CREDENTIAL_EXFIL_DETECTED']),
     new Set(['CANVAS_KEYSTROKE_CAPTURE_DETECTED', 'CANVAS_CREDENTIAL_EXFIL_DETECTED', 'WEBSOCKET_CREDENTIAL_EXFIL_DETECTED']),
     new Set(['SPECULATION_RULES_PHISHING_DETECTED', 'LLM_GENERATED_PHISHING_DETECTED', 'PHISHVISION_BRAND_IMPERSONATION']),
+    new Set(['EXTENSION_PROBE_DETECTED', 'PROXY_AITM_DETECTED', 'PHISHVISION_BRAND_IMPERSONATION']),
   ];
 
   for (let i = 0; i < events.length; i++) {

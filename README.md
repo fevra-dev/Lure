@@ -1,18 +1,19 @@
 # PhishOps Security Suite
 
-A browser-native phishing defence platform built for SOC teams. 43 real-time detection modules in a Chrome MV3 extension covering the full phishing kill chain — from delivery through credential harvest to persistence — paired with a Python email analysis CLI that produces verdicts from raw `.eml` files.
+A browser-native phishing defence platform built for SOC teams. 44 real-time detection modules in a Chrome MV3 extension covering the full phishing kill chain — from delivery through credential harvest to persistence — paired with a Python email analysis CLI that produces verdicts from raw `.eml` files.
 
 ## Architecture
 
 ```mermaid
 graph TB
-    subgraph "Chrome Extension — 43 Detectors, 19 Waves"
+    subgraph "Chrome Extension — 44 Detectors, 20 Waves"
         SW[Service Worker<br/>Message Router + Triage Engine] --> W1[Wave 1–3: Foundation<br/>OAuthGuard · DataEgress · ExtensionAuditor · AgentIntentGuard]
         SW --> W2[Wave 4–6: Interaction Layer<br/>AutofillGuard · ClipboardDefender · FullscreenGuard<br/>PasskeyGuard · QRLjackingGuard]
         SW --> W3[Wave 7–9: Social Engineering<br/>WebRTCGuard · ScreenShareGuard · PhishVision<br/>ProxyGuard · SyncGuard · FakeSender]
         SW --> W4[Wave 10–12: Evasion<br/>CTAPGuard · IPFSGuard · LLMScorer<br/>VNCGuard · PWAGuard · TPASentinel]
         SW --> W5[Wave 13–15: Exfil + Persistence<br/>DrainerGuard · StyleAuditor · WsExfilGuard<br/>SwGuard · EtherHidingGuard · NotificationGuard]
         SW --> W6[Wave 16–19: Next-Gen<br/>WebTransportGuard · CanvasPhishGuard<br/>CanvasKeystrokeGuard · CanvasExfilGuard<br/>SpeculationRulesGuard]
+        SW --> W7[Wave 20: Anti-Fingerprinting<br/>StealthKit · ProbeGuard]
     end
 
     subgraph "Lure CLI — Email Analysis Pipeline"
@@ -25,7 +26,7 @@ graph TB
 
     subgraph "Intelligence Layer"
         SW --> TRI[Triage Engine<br/>NIST 800-61r3 · MITRE ATT&CK]
-        SW --> INT[Intelligence Lifecycle<br/>34 PIRs · 30 Correlation Sets]
+        SW --> INT[Intelligence Lifecycle<br/>35 PIRs · 31 Correlation Sets]
         SW --> TEL[Telemetry<br/>chrome.storage.local]
         TEL --> POP[Popup Dashboard]
         TEL -.->|Production| DCR[Azure Monitor DCR]
@@ -34,7 +35,7 @@ graph TB
 
 ## Detector Inventory
 
-43 detectors across 19 implementation waves, each with additive signal scoring (alert at 0.50, block at 0.70, cap 1.0).
+44 detectors across 20 implementation waves, each with additive signal scoring (alert at 0.50, block at 0.70, cap 1.0).
 
 | Wave | Detector | Threat | MITRE ATT&CK | Injection |
 |------|----------|--------|--------------|-----------|
@@ -74,6 +75,7 @@ graph TB
 | 18 | CanvasKeystrokeGuard — Canvas Keystroke Capture | Advanced kits / Flutter Web | T1056.003 | document_start (MAIN world) |
 | 18 | CanvasExfilGuard — Canvas Credential Exfiltration | Advanced kits / Flutter Web | T1041 | document_start |
 | 19 | SpeculationRulesGuard — Speculation Rules Phishing | XSS → Prerender abuse | T1598.003 | document_start |
+| 20 | ProbeGuard — Security Tool Probing Detection | Tycoon 2FA / EvilProxy / CreepJS | T1518.001 | document_start (MAIN world) |
 
 ## Signal Scoring Model
 
@@ -100,7 +102,7 @@ Every detection event is enriched by two engines before persistence:
 
 **Triage Engine** (`lib/triage.js`) — NIST SP 800-61r3 classification with MITRE ATT&CK mapping, SANS PICERL priority/SLA assignment, and recommended containment actions per event type.
 
-**Intelligence Lifecycle** (`lib/intelligence_lifecycle.js`) — 34 Priority Intelligence Requirements (PIRs), confidence scoring, deduplication, 30 correlation sets for campaign grouping, and tactical intelligence summary generation.
+**Intelligence Lifecycle** (`lib/intelligence_lifecycle.js`) — 35 Priority Intelligence Requirements (PIRs), confidence scoring, deduplication, 31 correlation sets for campaign grouping, and tactical intelligence summary generation.
 
 ## Quick Start
 
@@ -119,7 +121,7 @@ cd lur3
 ### Run Tests
 
 ```bash
-# Extension tests (Vitest) — 896+ tests across 25 passing suites (Waves 11–19)
+# Extension tests (Vitest) — 958+ tests across 27 passing suites (Waves 11–20)
 npx vitest run extension/__tests__/
 
 # Lure tests (pytest)
@@ -142,12 +144,12 @@ Email analysis pipeline producing categorical verdicts from raw `.eml` files.
 ```
 lur3/
 ├── extension/                  # Chrome MV3 extension
-│   ├── manifest.json           # v1.0.0, 43 detectors
-│   ├── background/             # Service worker (Wave 1–19 message routing)
-│   ├── content/                # 32 content scripts
-│   ├── lib/                    # triage.js, intelligence_lifecycle.js, telemetry.js
+│   ├── manifest.json           # v1.0.0, 44 detectors
+│   ├── background/             # Service worker (Wave 1–20 message routing)
+│   ├── content/                # 35 content scripts
+│   ├── lib/                    # triage.js, intelligence_lifecycle.js, telemetry.js, stealth_kit.js
 │   ├── popup/                  # Dashboard UI (Dieter Rams / Braun design)
-│   └── __tests__/              # 33 Vitest test files
+│   └── __tests__/              # 35 Vitest test files
 │
 ├── lure/                       # Email analysis CLI
 │   ├── lure/modules/           # parser, extractor, scanner, scorer

@@ -365,6 +365,15 @@ const EVENT_CLASSIFICATION = {
     threatActor: 'Advanced phishing kits using Speculation Rules API for instant prerender phishing',
     description: 'Speculation Rules API abuse detected — cross-origin prerender/prefetch rules injected to pre-load phishing content with instant activation, bypassing traditional navigation-based detection',
   },
+
+  // Wave 20: ProbeGuard
+  EXTENSION_PROBE_DETECTED: {
+    category: 'reconnaissance',
+    mitreAttack: 'T1518.001',
+    mitreName: 'Software Discovery: Security Software Discovery',
+    threatActor: 'Tycoon 2FA / EvilProxy / advanced PhaaS kits probing for security extensions',
+    description: 'Page probing for security tool presence — toString reflection on wrapped APIs, iframe cross-frame verification, timing analysis, WAR extension fingerprinting, or CreepJS-style prototype lie detection',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -726,6 +735,14 @@ function getRecommendedActions(eventType, severity) {
       actions.push('If credentials were entered on the prerendered page: force password reset for the affected user');
       actions.push('Report the phishing domain to Safe Browsing / PhishTank');
       actions.push('Search the delivery URL in email/chat logs for additional victims');
+      break;
+
+    case 'EXTENSION_PROBE_DETECTED':
+      actions.push('Investigate the page for phishing indicators — probing is a strong precursor signal');
+      actions.push('Block the domain at DNS/web proxy if additional phishing signals are present');
+      actions.push('Check if the page serves different content to browsers with vs without security extensions');
+      actions.push('Report probing infrastructure to threat intelligence sharing platforms (MISP/OTX)');
+      actions.push('Correlate with other detection events on the same domain or campaign cluster');
       break;
 
     default:

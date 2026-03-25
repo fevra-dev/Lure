@@ -781,7 +781,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Wave 20: ProbeGuard events
+  if (message.type === 'PROBEGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
   return false;
 });
 
-console.debug('[PHISHOPS] Service worker loaded — all Wave 1–19 detectors active');
+console.debug('[PHISHOPS] Service worker loaded — all Wave 1–20 detectors active');

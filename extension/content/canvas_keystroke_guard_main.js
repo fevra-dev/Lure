@@ -20,6 +20,7 @@
 
 (function() {
   const SOURCE = 'PHISHOPS_CKG';
+  const sk = globalThis.__PHISHOPS_STEALTH;
 
   const KEYBOARD_EVENTS = new Set(['keydown', 'keypress', 'keyup', 'input']);
 
@@ -27,57 +28,104 @@
   /*  Wrap EventTarget.prototype.addEventListener                        */
   /* ------------------------------------------------------------------ */
 
-  const origAddEventListener = EventTarget.prototype.addEventListener;
+  if (sk) {
+    sk.stealthWrapProto(EventTarget.prototype, 'addEventListener',
+      (target, thisArg, args) => {
+        const [eventType] = args;
+        if (
+          thisArg instanceof HTMLCanvasElement &&
+          typeof eventType === 'string' &&
+          KEYBOARD_EVENTS.has(eventType)
+        ) {
+          try {
+            window.postMessage({
+              source: SOURCE,
+              type: 'CANVAS_KEYBOARD_LISTENER',
+              data: {
+                eventType,
+                canvasIndex: getCanvasIndex(thisArg),
+                canvasWidth: thisArg.width || 0,
+                canvasHeight: thisArg.height || 0,
+                timestamp: Date.now(),
+              },
+            }, '*');
+          } catch { /* non-critical */ }
+        }
+        return sk.apply(target, thisArg, args);
+      }
+    );
 
-  EventTarget.prototype.addEventListener = function(eventType, listener, options) {
-    if (
-      this instanceof HTMLCanvasElement &&
-      typeof eventType === 'string' &&
-      KEYBOARD_EVENTS.has(eventType)
-    ) {
-      try {
-        window.postMessage({
-          source: SOURCE,
-          type: 'CANVAS_KEYBOARD_LISTENER',
-          data: {
-            eventType,
-            canvasIndex: getCanvasIndex(this),
-            canvasWidth: this.width || 0,
-            canvasHeight: this.height || 0,
-            timestamp: Date.now(),
-          },
-        }, '*');
-      } catch { /* non-critical */ }
-    }
+    /* ------------------------------------------------------------------ */
+    /*  Wrap HTMLCanvasElement.prototype.getContext                         */
+    /* ------------------------------------------------------------------ */
 
-    return origAddEventListener.call(this, eventType, listener, options);
-  };
+    sk.stealthWrapProto(HTMLCanvasElement.prototype, 'getContext',
+      (target, thisArg, args) => {
+        const [contextType] = args;
+        if (typeof contextType === 'string') {
+          try {
+            window.postMessage({
+              source: SOURCE,
+              type: 'CANVAS_CONTEXT_CREATED',
+              data: {
+                contextType,
+                canvasIndex: getCanvasIndex(thisArg),
+                canvasWidth: thisArg.width || 0,
+                canvasHeight: thisArg.height || 0,
+                timestamp: Date.now(),
+              },
+            }, '*');
+          } catch { /* non-critical */ }
+        }
+        return sk.apply(target, thisArg, args);
+      }
+    );
+  } else {
+    // Fallback: naive wrapping if StealthKit not loaded
+    const origAddEventListener = EventTarget.prototype.addEventListener;
+    EventTarget.prototype.addEventListener = function(eventType, listener, options) {
+      if (
+        this instanceof HTMLCanvasElement &&
+        typeof eventType === 'string' &&
+        KEYBOARD_EVENTS.has(eventType)
+      ) {
+        try {
+          window.postMessage({
+            source: SOURCE,
+            type: 'CANVAS_KEYBOARD_LISTENER',
+            data: {
+              eventType,
+              canvasIndex: getCanvasIndex(this),
+              canvasWidth: this.width || 0,
+              canvasHeight: this.height || 0,
+              timestamp: Date.now(),
+            },
+          }, '*');
+        } catch { /* non-critical */ }
+      }
+      return origAddEventListener.call(this, eventType, listener, options);
+    };
 
-  /* ------------------------------------------------------------------ */
-  /*  Wrap HTMLCanvasElement.prototype.getContext                         */
-  /* ------------------------------------------------------------------ */
-
-  const origGetContext = HTMLCanvasElement.prototype.getContext;
-
-  HTMLCanvasElement.prototype.getContext = function(contextType) {
-    if (typeof contextType === 'string') {
-      try {
-        window.postMessage({
-          source: SOURCE,
-          type: 'CANVAS_CONTEXT_CREATED',
-          data: {
-            contextType,
-            canvasIndex: getCanvasIndex(this),
-            canvasWidth: this.width || 0,
-            canvasHeight: this.height || 0,
-            timestamp: Date.now(),
-          },
-        }, '*');
-      } catch { /* non-critical */ }
-    }
-
-    return origGetContext.apply(this, arguments);
-  };
+    const origGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function(contextType) {
+      if (typeof contextType === 'string') {
+        try {
+          window.postMessage({
+            source: SOURCE,
+            type: 'CANVAS_CONTEXT_CREATED',
+            data: {
+              contextType,
+              canvasIndex: getCanvasIndex(this),
+              canvasWidth: this.width || 0,
+              canvasHeight: this.height || 0,
+              timestamp: Date.now(),
+            },
+          }, '*');
+        } catch { /* non-critical */ }
+      }
+      return origGetContext.apply(this, arguments);
+    };
+  }
 
   /* ------------------------------------------------------------------ */
   /*  Helpers                                                            */
