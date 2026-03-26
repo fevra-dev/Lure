@@ -1,12 +1,12 @@
 # PhishOps Security Suite
 
-A browser-native phishing defence platform built for SOC teams. 44 real-time detection modules in a Chrome MV3 extension covering the full phishing kill chain — from delivery through credential harvest to persistence — paired with a Python email analysis CLI that produces verdicts from raw `.eml` files.
+A browser-native phishing defence platform built for SOC teams. 45 real-time detection modules in a Chrome MV3 extension covering the full phishing kill chain — from delivery through credential harvest to persistence — paired with a Python email analysis CLI that produces verdicts from raw `.eml` files.
 
 ## Architecture
 
 ```mermaid
 graph TB
-    subgraph "Chrome Extension — 44 Detectors, 20 Waves"
+    subgraph "Chrome Extension — 45 Detectors, 21 Waves"
         SW[Service Worker<br/>Message Router + Triage Engine] --> W1[Wave 1–3: Foundation<br/>OAuthGuard · DataEgress · ExtensionAuditor · AgentIntentGuard]
         SW --> W2[Wave 4–6: Interaction Layer<br/>AutofillGuard · ClipboardDefender · FullscreenGuard<br/>PasskeyGuard · QRLjackingGuard]
         SW --> W3[Wave 7–9: Social Engineering<br/>WebRTCGuard · ScreenShareGuard · PhishVision<br/>ProxyGuard · SyncGuard · FakeSender]
@@ -14,6 +14,7 @@ graph TB
         SW --> W5[Wave 13–15: Exfil + Persistence<br/>DrainerGuard · StyleAuditor · WsExfilGuard<br/>SwGuard · EtherHidingGuard · NotificationGuard]
         SW --> W6[Wave 16–19: Next-Gen<br/>WebTransportGuard · CanvasPhishGuard<br/>CanvasKeystrokeGuard · CanvasExfilGuard<br/>SpeculationRulesGuard]
         SW --> W7[Wave 20: Anti-Fingerprinting<br/>StealthKit · ProbeGuard]
+        SW --> W8[Wave 21: Payment API<br/>PaymentRequestGuard]
     end
 
     subgraph "Lure CLI — Email Analysis Pipeline"
@@ -35,7 +36,7 @@ graph TB
 
 ## Detector Inventory
 
-44 detectors across 20 implementation waves, each with additive signal scoring (alert at 0.50, block at 0.70, cap 1.0).
+45 detectors across 21 implementation waves, each with additive signal scoring (alert at 0.50, block at 0.70, cap 1.0).
 
 | Wave | Detector | Threat | MITRE ATT&CK | Injection |
 |------|----------|--------|--------------|-----------|
@@ -76,6 +77,7 @@ graph TB
 | 18 | CanvasExfilGuard — Canvas Credential Exfiltration | Advanced kits / Flutter Web | T1041 | document_start |
 | 19 | SpeculationRulesGuard — Speculation Rules Phishing | XSS → Prerender abuse | T1598.003 | document_start |
 | 20 | ProbeGuard — Security Tool Probing Detection | Tycoon 2FA / EvilProxy / CreepJS | T1518.001 | document_start (MAIN world) |
+| 21 | PaymentRequestGuard — Payment API Phishing Signal | Theoretical (PII harvesting via browser-native payment UI) | T1056.003 | document_start (MAIN world) |
 
 ## Signal Scoring Model
 
@@ -121,7 +123,7 @@ cd lur3
 ### Run Tests
 
 ```bash
-# Extension tests (Vitest) — 958+ tests across 27 passing suites (Waves 11–20)
+# Extension tests (Vitest) — 994+ tests across 28 passing suites (Waves 11–21)
 npx vitest run extension/__tests__/
 
 # Lure tests (pytest)
@@ -144,12 +146,12 @@ Email analysis pipeline producing categorical verdicts from raw `.eml` files.
 ```
 lur3/
 ├── extension/                  # Chrome MV3 extension
-│   ├── manifest.json           # v1.0.0, 44 detectors
-│   ├── background/             # Service worker (Wave 1–20 message routing)
-│   ├── content/                # 35 content scripts
+│   ├── manifest.json           # v1.0.0, 45 detectors
+│   ├── background/             # Service worker (Wave 1–21 message routing)
+│   ├── content/                # 37 content scripts
 │   ├── lib/                    # triage.js, intelligence_lifecycle.js, telemetry.js, stealth_kit.js
 │   ├── popup/                  # Dashboard UI (Dieter Rams / Braun design)
-│   └── __tests__/              # 35 Vitest test files
+│   └── __tests__/              # 37 Vitest test files
 │
 ├── lure/                       # Email analysis CLI
 │   ├── lure/modules/           # parser, extractor, scanner, scorer

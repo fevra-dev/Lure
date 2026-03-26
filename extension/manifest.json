@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PhishOps Security Suite",
   "version": "1.0.0",
-  "description": "Browser-native phishing defence: 44 detectors covering OAuth abuse, HTML smuggling, extension supply chain, clipboard injection, fullscreen overlay, passkey theft, QR session hijacking, virtual camera detection, TOAD screen share, brand impersonation, AiTM proxy detection, browser sync hijacking, helpdesk platform abuse, FIDO downgrade attacks, IPFS gateway phishing, LOTL trusted domain abuse, AI-generated phishing detection, EvilnoVNC WebSocket AiTM, WebSocket credential exfiltration, Service Worker persistence, blockchain-hosted phishing (EtherHiding), notification abuse, WebTransport AiTM relay, canvas credential phishing, canvas keystroke capture, canvas credential exfiltration, Speculation Rules API phishing, security tool probing meta-detection, and agentic guardrails.",
+  "description": "Browser-native phishing defence: 45 detectors covering OAuth abuse, HTML smuggling, extension supply chain, clipboard injection, fullscreen overlay, passkey theft, QR session hijacking, virtual camera detection, TOAD screen share, brand impersonation, AiTM proxy detection, browser sync hijacking, helpdesk platform abuse, FIDO downgrade attacks, IPFS gateway phishing, LOTL trusted domain abuse, AI-generated phishing detection, EvilnoVNC WebSocket AiTM, WebSocket credential exfiltration, Service Worker persistence, blockchain-hosted phishing (EtherHiding), notification abuse, WebTransport AiTM relay, canvas credential phishing, canvas keystroke capture, canvas credential exfiltration, Speculation Rules API phishing, security tool probing meta-detection, Payment Request API phishing signal, and agentic guardrails.",
 
   "permissions": [
     "storage",
@@ -197,6 +197,17 @@
       "matches": ["<all_urls>"],
       "js": ["content/speculation_rules_guard.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/payment_request_guard_main.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/payment_request_guard_bridge.js"],
+      "run_at": "document_start"
     }
   ],
 
@@ -259,7 +270,12 @@
       "wave18_canvasexfilguard": "Canvas credential exfiltration detection (fetch/XHR/sendBeacon/Image POST monitoring on canvas-dominated pages) — content/canvas_exfil_guard.js",
       "wave19_speculationrulesguard": "Speculation Rules API phishing detection (cross-origin prerender/prefetch, dynamic injection, suspicious URL patterns, active defense via element removal) — content/speculation_rules_guard.js",
       "wave20_stealthkit": "Proxy-based API wrapper hardening (toString patching, stack sanitisation, Proxy-based wrapping) — lib/stealth_kit.js",
-      "wave20_probeguard": "Security tool probing meta-detection (toString probing, iframe cross-frame verification, timing analysis, WAR fingerprinting, prototype lie detection) — content/probe_guard_main.js + bridge"
+      "wave20_probeguard": "Security tool probing meta-detection (toString probing, iframe cross-frame verification, timing analysis, WAR fingerprinting, prototype lie detection) — content/probe_guard_main.js + bridge",
+      "wave21_paymentrequestguard": "Payment Request API phishing signal — low-confidence supplementary constructor/show() monitoring (PII harvesting via browser-native payment UI) — content/payment_request_guard_main.js + bridge"
+    },
+    "backlog": {
+      "trusted_types_compatibility": "Ensure all content script DOM manipulation uses TT-compatible APIs (textContent, createElement/appendChild, DOMPurify with RETURN_TRUSTED_TYPE: true) so PhishOps does not break on TT-enforcing sites (Google Workspace, YouTube, Meta properties).",
+      "trusted_types_threat_model": "Trusted Types default policy abuse is a known theoretical vector with no practical relevance to PhaaS operations. Revisit if TT adoption exceeds ~5% of the Tranco top 10K or if any PhaaS kit demonstrates TT awareness."
     }
   }
 }

@@ -792,7 +792,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Wave 21: PaymentRequestGuard events
+  if (message.type === 'PAYMENTREQUESTGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
   return false;
 });
 
-console.debug('[PHISHOPS] Service worker loaded — all Wave 1–20 detectors active');
+console.debug('[PHISHOPS] Service worker loaded — all Wave 1–21 detectors active');
