@@ -3,205 +3,339 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PhishOps Dashboard</title>
+  <title>LURE | PhishOps Detection Suite</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap');
+    :root {
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Liberation Mono', monospace;
+      --bg-shell: #2a3035;
+      --bg-panel: #1e2226;
+      --bg-stats: #24292e;
+      --border: #3b4248;
+      --text-primary: #d1c7b1;
+      --text-muted: #8a9299;
+      --text-dim: #646a70;
+      --accent-olive: #8b9e73;
+      --accent-bronze: #b59a6d;
+      --accent-red: #c25e5e;
+      --accent-cyan: #7ec4cf;
+    }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      width: 380px;
-      min-height: 400px;
-      background: #0A0907;
-      color: #D4CCBC;
-      font-family: 'Work Sans', system-ui, -apple-system, sans-serif;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .header {
-      background: #141210;
-      padding: 16px;
-      border-bottom: 2px solid #2A2520;
-    }
-
-    .header h1 {
-      font-size: 16px;
-      font-weight: 600;
-      color: #D4CCBC;
+      width: 440px;
+      height: 400px;
+      background: transparent;
+      font-family: var(--font-sans);
+      overflow: hidden;
       display: flex;
+      justify-content: center;
       align-items: center;
-      gap: 8px;
-      text-transform: lowercase;
     }
 
-    .header .version {
-      font-size: 11px;
-      color: #6B6560;
-      font-weight: 400;
-    }
-
-    .status-bar {
+    .shell {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-shell);
+      color: var(--text-primary);
       display: flex;
-      gap: 8px;
-      margin-top: 12px;
+      flex-direction: column;
+      padding: 16px;
+      border: 1px solid var(--border);
+      position: relative;
     }
 
-    .status-item {
-      flex: 1;
-      background: rgba(212,204,188,0.04);
-      padding: 10px 12px;
-      text-align: center;
-    }
-
-    .status-item .count {
-      font-size: 22px;
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .status-item .label {
-      font-size: 10px;
-      color: #6B6560;
-      text-transform: lowercase;
-      letter-spacing: 0.5px;
-      margin-top: 4px;
-    }
-
-    .count-critical { color: #BF1B1B; }
-    .count-high { color: #D4861A; }
-    .count-total { color: #D4CCBC; }
-
-    .section {
-      padding: 12px 16px;
-    }
-
-    .section-title {
-      font-size: 11px;
-      font-weight: 600;
-      color: #6B6560;
-      text-transform: lowercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 8px;
-    }
-
-    .event-list {
-      max-height: 240px;
-      overflow-y: auto;
-    }
-
-    .event-list::-webkit-scrollbar { width: 4px; }
-    .event-list::-webkit-scrollbar-track { background: transparent; }
-    .event-list::-webkit-scrollbar-thumb { background: #2A2520; }
-
-    .event {
-      background: rgba(212,204,188,0.03);
-      border-left: 3px solid #2A2520;
-      padding: 8px 10px;
-      margin-bottom: 4px;
-      cursor: default;
-      transition: background 0.15s;
-    }
-
-    .event:hover { background: rgba(212,204,188,0.06); }
-
-    .event.severity-Critical { border-left-color: #BF1B1B; }
-    .event.severity-High { border-left-color: #D4861A; }
-    .event.severity-Medium { border-left-color: #8C7A5C; }
-
-    .event-type {
-      font-size: 11px;
-      font-weight: 600;
-      color: #D4CCBC;
-    }
-
-    .event-detail {
-      font-size: 11px;
-      color: #6B6560;
-      margin-top: 2px;
-      word-break: break-all;
-    }
-
-    .event-time {
-      font-size: 10px;
-      color: #4A4540;
-      margin-top: 2px;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: #4A4540;
-    }
-
-    .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
-
-    .footer {
-      padding: 12px 16px;
-      border-top: 1px solid #1E1B18;
+    /* ── Header ─────────────────────────────── */
+    .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 16px;
     }
 
-    .footer button {
-      background: none;
-      border: 1px solid #2A2520;
-      color: #6B6560;
-      padding: 6px 12px;
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.9);
+      line-height: 1.1;
+    }
+
+    .brand-subtitle {
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--text-muted);
+    }
+
+    /* ── Toggle ─────────────────────────────── */
+    .toggle-wrap {
+      position: relative;
+      display: inline-block;
+      width: 32px;
+      height: 16px;
+    }
+
+    .toggle-input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-track {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #4a5157;
+      border-radius: 8px;
       cursor: pointer;
-      font-family: 'Work Sans', system-ui, sans-serif;
-      font-size: 11px;
-      transition: all 0.15s;
+      transition: background-color 0.3s;
     }
 
-    .footer button:hover {
-      border-color: #BF1B1B;
-      color: #BF1B1B;
+    .toggle-input:checked + .toggle-track {
+      background: var(--accent-olive);
     }
 
-    .detectors-count {
-      font-size: 11px;
-      color: #4A4540;
+    .toggle-dot {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 12px;
+      height: 12px;
+      background: #e5e0d8;
+      border-radius: 50%;
+      transition: transform 0.3s;
+      pointer-events: none;
+    }
+
+    .toggle-input:checked ~ .toggle-dot {
+      transform: translateX(16px);
+    }
+
+    /* ── Canvas Area ────────────────────────── */
+    .viz-area {
+      flex-grow: 1;
+      background: var(--bg-panel);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+      margin-bottom: 16px;
+    }
+
+    .viz-area canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .scan-line {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--accent-olive), transparent);
+      opacity: 0.2;
+    }
+
+    .sentinel-indicator {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      opacity: 0.6;
+    }
+
+    .sentinel-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 8px var(--accent-cyan);
+      animation: pulse-sentinel 3s infinite ease-in-out;
+    }
+
+    .sentinel-label {
+      font-size: 7px;
+      letter-spacing: -0.02em;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+
+    @keyframes pulse-sentinel {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.1); }
+    }
+
+    /* ── Stats Bar ──────────────────────────── */
+    .stats-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-stats);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      margin-bottom: 12px;
+    }
+
+    .stat-col {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .stat-col + .stat-col {
+      padding-left: 20px;
+    }
+
+    .stat-divider {
+      width: 1px;
+      height: 32px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .stat-label {
+      font-size: 8px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 4px;
+    }
+
+    .stat-label-total { color: var(--text-muted); }
+    .stat-label-high { color: var(--accent-bronze); }
+    .stat-label-critical { color: var(--accent-red); }
+
+    .stat-value {
+      font-size: 20px;
+      font-family: var(--font-mono);
+      line-height: 1;
+    }
+
+    .stat-value-total { color: var(--text-primary); }
+    .stat-value-high { color: var(--accent-bronze); }
+    .stat-value-critical { color: var(--accent-red); }
+
+    @keyframes text-flash {
+      0% { text-shadow: 0 0 8px currentColor; }
+      100% { text-shadow: none; }
+    }
+
+    .stat-updated {
+      animation: text-flash 0.5s ease-out;
+    }
+
+    /* ── Footer ─────────────────────────────── */
+    .footer {
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-muted);
+    }
+
+    .telemetry-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .telemetry-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent-olive);
+      transition: background-color 0.3s;
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>
-      <span>phishops</span>
-      <span class="version">v2.0.0</span>
-    </h1>
-    <div class="status-bar">
-      <div class="status-item">
-        <div class="count count-critical" id="critical-count">0</div>
-        <div class="label">critical</div>
+
+  <div class="shell">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <svg width="32" height="32" viewBox="0 0 100 100" fill="none" stroke="#b59a6d" stroke-width="2">
+          <path d="M 20 50 C 20 70, 40 70, 40 50 L 40 30" stroke-linecap="round"/>
+          <path d="M 35 45 L 40 50" stroke-linecap="round"/>
+          <circle cx="40" cy="30" r="3" fill="none"/>
+          <path d="M 40 40 L 70 30" stroke-width="1" opacity="0.6"/>
+          <path d="M 40 40 L 75 45" stroke-width="1" opacity="0.6"/>
+          <path d="M 40 40 L 65 55" stroke-width="1" opacity="0.6"/>
+        </svg>
+        <div>
+          <div class="brand-title">LURE</div>
+          <div class="brand-subtitle">PhishOps Detection Suite</div>
+        </div>
       </div>
-      <div class="status-item">
-        <div class="count count-high" id="high-count">0</div>
-        <div class="label">high</div>
+
+      <div class="toggle-wrap">
+        <input type="checkbox" id="activeToggle" class="toggle-input" checked>
+        <label for="activeToggle" class="toggle-track"></label>
+        <div class="toggle-dot"></div>
       </div>
-      <div class="status-item">
-        <div class="count count-total" id="total-count">0</div>
-        <div class="label">total</div>
+    </header>
+
+    <!-- Visualization Canvas -->
+    <div class="viz-area">
+      <canvas id="lureCanvas"></canvas>
+      <div class="scan-line"></div>
+      <div class="sentinel-indicator">
+        <div class="sentinel-dot"></div>
+        <span class="sentinel-label">SENTINEL</span>
       </div>
     </div>
-  </div>
 
-  <div class="section">
-    <div class="section-title">recent detections</div>
-    <div class="event-list" id="event-list">
-      <div class="empty-state">
-        <div class="icon">&#x1F6E1;&#xFE0F;</div>
-        <div>no detections yet</div>
-        <div style="font-size:11px; margin-top:4px;">open a demo page to trigger detectors</div>
+    <!-- Detection Statistics -->
+    <div class="stats-bar">
+      <div class="stat-col">
+        <span class="stat-label stat-label-total">TOTAL INGESTED</span>
+        <span class="stat-value stat-value-total" id="totalCount">0</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-col">
+        <span class="stat-label stat-label-high">HIGH</span>
+        <span class="stat-value stat-value-high" id="highCount">0</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-col">
+        <span class="stat-label stat-label-critical">CRITICAL</span>
+        <span class="stat-value stat-value-critical" id="criticalCount">0</span>
       </div>
     </div>
-  </div>
 
-  <div class="footer">
-    <span class="detectors-count">44 detectors active</span>
-    <button id="clear-btn">clear events</button>
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="telemetry-status">
+        <div class="telemetry-dot" id="telemetryDot"></div>
+        <span id="telemetryText">TELEMETRY: ROUTING</span>
+      </div>
+      <div>
+        <span id="footerInfo">v1.0.0 | 45 DETECTORS ACTIVE</span>
+      </div>
+    </footer>
+
   </div>
 
   <script src="popup.js"></script>
