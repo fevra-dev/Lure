@@ -30,6 +30,8 @@
 
 'use strict';
 
+import { deepQuerySelectorAll } from '../lib/shadow_dom_utils.js';
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -63,7 +65,7 @@ const OAUTH_ENDPOINTS = [
  * @returns {Element[]}
  */
 export function getCredentialFields() {
-  return [...document.querySelectorAll(CREDENTIAL_SELECTOR)];
+  return deepQuerySelectorAll(CREDENTIAL_SELECTOR, document);
 }
 
 /**

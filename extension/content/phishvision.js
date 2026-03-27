@@ -25,6 +25,8 @@
 
 'use strict';
 
+import { deepQuerySelectorAll } from '../lib/shadow_dom_utils.js';
+
 /* ------------------------------------------------------------------ */
 /*  Favicon Hash Signal                                                */
 /* ------------------------------------------------------------------ */
@@ -330,10 +332,11 @@ export function checkLoginFormSignals(doc) {
 
   const signals = [];
 
-  const passwordFields = doc.querySelectorAll('input[type="password"]');
-  const emailFields = doc.querySelectorAll('input[type="email"]');
-  const autocompleteFields = doc.querySelectorAll(
-    'input[autocomplete="username"], input[autocomplete="current-password"], input[autocomplete="new-password"]'
+  const passwordFields = deepQuerySelectorAll('input[type="password"]', doc);
+  const emailFields = deepQuerySelectorAll('input[type="email"]', doc);
+  const autocompleteFields = deepQuerySelectorAll(
+    'input[autocomplete="username"], input[autocomplete="current-password"], input[autocomplete="new-password"]',
+    doc
   );
 
   if (passwordFields.length > 0 || emailFields.length > 0 || autocompleteFields.length > 0) {
@@ -389,7 +392,7 @@ export function checkTextToHtmlRatio(doc) {
   if (html.length === 0) return [];
 
   const ratio = text.length / html.length;
-  const hasPasswordField = doc.querySelectorAll('input[type="password"]').length > 0;
+  const hasPasswordField = deepQuerySelectorAll('input[type="password"]', doc).length > 0;
 
   if (ratio < 0.08 && hasPasswordField) {
     signals.push({
@@ -504,8 +507,8 @@ export function checkLOTLTrustedDomain(doc, hostname) {
 
   // Must have credential fields
   const hasCredentials =
-    doc.querySelectorAll('input[type="password"]').length > 0 ||
-    doc.querySelectorAll('input[type="email"]').length > 0;
+    deepQuerySelectorAll('input[type="password"]', doc).length > 0 ||
+    deepQuerySelectorAll('input[type="email"]', doc).length > 0;
   if (!hasCredentials) return [];
 
   // Get hosting platform's own brand (if any)
