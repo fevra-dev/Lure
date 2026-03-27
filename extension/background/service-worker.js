@@ -31,6 +31,7 @@
 
 import { emitTelemetry } from '../lib/telemetry.js';
 import { triageEvent } from '../lib/triage.js';
+import { syncThreatIntel, getStoredThreatIntel, isDomainKnownBad } from '../lib/threat_intel_sync.js';
 
 /**
  * Triage-enriched telemetry emitter.
@@ -40,6 +41,21 @@ function emitTriagedTelemetry(event) {
   const triaged = triageEvent(event);
   emitTelemetry(triaged);
 }
+
+// =============================================================================
+// Wave 23: ThreatIntelSync — install hook + recurring alarm
+// =============================================================================
+
+chrome.runtime.onInstalled.addListener(async () => {
+  await syncThreatIntel();
+  chrome.alarms.create('THREATINTEL_SYNC', { periodInMinutes: 240 });
+});
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === 'THREATINTEL_SYNC') {
+    await syncThreatIntel();
+  }
+});
 
 // =============================================================================
 // Wave 1: OAuthGuard — webRequest listeners
@@ -433,6 +449,36 @@ chrome.management.onEnabled?.addListener(async (info) => {
 });
 
 // =============================================================================
+// Wave 23: ThreatIntelSync — webNavigation domain reputation check
+// =============================================================================
+
+chrome.webNavigation.onCommitted.addListener(async (details) => {
+  if (details.frameId !== 0) return;
+  if (!details.url?.startsWith('http')) return;
+
+  let domain;
+  try {
+    domain = new URL(details.url).hostname.replace(/^www\./, '');
+  } catch {
+    return;
+  }
+
+  const intel = await getStoredThreatIntel();
+  if (!intel || !isDomainKnownBad(domain, intel)) return;
+
+  emitTriagedTelemetry({
+    eventType: 'THREAT_INTEL_DOMAIN_HIT',
+    severity: 'Medium',
+    riskScore: 0.50,
+    domain,
+    url: details.url,
+    lastSync: intel.lastSync,
+    tabId: details.tabId,
+    timestamp: new Date().toISOString(),
+  });
+}, { url: [{ schemes: ['http', 'https'] }] });
+
+// =============================================================================
 // Message routing — all content scripts -> telemetry
 // =============================================================================
 
@@ -817,4 +863,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-console.debug('[PHISHOPS] Service worker loaded — all Wave 1–22 detectors active');
+console.debug('[PHISHOPS] Service worker loaded — Wave 1–22 detectors + ThreatIntelSync (Wave 23) active');

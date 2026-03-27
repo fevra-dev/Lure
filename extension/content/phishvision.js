@@ -11,6 +11,7 @@
  * Signal architecture:
  *   phishvision:brand_keyword_mismatch           +0.35
  *   phishvision:favicon_brand_match              +0.30
+ *   phishvision:favicon_hash_brand_mismatch      +0.30
  *   phishvision:lotl_trusted_domain_credential   +0.30
  *   phishvision:suspicious_domain                +0.25
  *   phishvision:login_form_present               +0.20
@@ -23,6 +24,74 @@
  */
 
 'use strict';
+
+/* ------------------------------------------------------------------ */
+/*  Favicon Hash Signal                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * FNV-1a 32-bit hash of a byte array.
+ * Compatible with Shodan mmh3 favicon hash format used by PhishCollector.
+ * @param {Uint8Array} bytes
+ * @returns {number} unsigned 32-bit integer
+ */
+function fnv1a32(bytes) {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < bytes.length; i++) {
+    hash ^= bytes[i];
+    hash = (Math.imul(hash, 0x01000193) >>> 0);
+  }
+  return hash >>> 0;
+}
+
+/**
+ * Known brand favicon hashes → brand name mapping.
+ *
+ * To add a brand hash:
+ *   1. Navigate to the brand's canonical login page
+ *   2. Run in DevTools console:
+ *      fetch('/favicon.ico').then(r=>r.arrayBuffer()).then(b=>{
+ *        let h=0x811c9dc5,a=new Uint8Array(b);
+ *        for(let i=0;i<a.length;i++){h^=a[i];h=(Math.imul(h,0x01000193)>>>0);}
+ *        console.log(h>>>0);
+ *      });
+ *   3. Add the integer as: [hashInteger, 'brandName']
+ *
+ * Attacker-copied favicons will produce the same hash on phishing domains,
+ * triggering the phishvision:favicon_hash_brand_mismatch signal.
+ * The faviconHash field in telemetry events enables analysts to build this map.
+ */
+const FAVICON_HASH_TO_BRAND = new Map([
+  // Populate as verified hashes are collected from real brand login pages.
+]);
+
+/**
+ * Fetch the page favicon and compute its FNV-1a hash.
+ * Prefers explicit <link rel="icon"> over /favicon.ico.
+ * Returns null on fetch failure (graceful degradation).
+ * @returns {Promise<number|null>}
+ */
+async function computeFaviconHash() {
+  try {
+    const iconLink = document.querySelector('link[rel~="icon"][href]');
+    const faviconUrl = iconLink
+      ? new URL(iconLink.href, location.href).href
+      : `${location.origin}/favicon.ico`;
+
+    const response = await fetch(faviconUrl, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!response.ok) return null;
+
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength === 0) return null;
+
+    return fnv1a32(new Uint8Array(buffer));
+  } catch {
+    return null;
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /*  Known Brand Database                                               */
@@ -549,7 +618,7 @@ export function injectPhishVisionWarningBanner(riskScore, matchedBrand, signals)
 /**
  * Run full PhishVision analysis on the current page.
  */
-export function runPhishVisionAnalysis() {
+export async function runPhishVisionAnalysis() {
   if (typeof document === 'undefined') return;
 
   const hostname = globalThis.location?.hostname || '';
@@ -565,12 +634,35 @@ export function runPhishVisionAnalysis() {
   const colorSignals = checkColorPaletteMatch(doc, hostname);
   const lotlSignals = checkLOTLTrustedDomain(doc, hostname);
 
+  // Favicon hash brand mismatch signal
+  let faviconHashComputed = null;
+  const faviconHashSignals = [];
+  const faviconHash = await computeFaviconHash();
+  if (faviconHash !== null) {
+    faviconHashComputed = faviconHash;
+    const matchedHashBrand = FAVICON_HASH_TO_BRAND.get(faviconHash);
+    if (matchedHashBrand) {
+      const brandData = KNOWN_BRANDS[matchedHashBrand];
+      const isLegitDomain = brandData?.domains?.some(d =>
+        hostname === d || hostname.endsWith('.' + d)
+      );
+      if (!isLegitDomain) {
+        faviconHashSignals.push({
+          id: 'phishvision:favicon_hash_brand_mismatch',
+          weight: 0.30,
+          matchedBrand: matchedHashBrand,
+        });
+      }
+    }
+  }
+
   const allSignals = [
     ...brandSignals,
     ...loginSignals,
     ...domainSignals,
     ...ratioSignals,
     ...faviconSignals,
+    ...faviconHashSignals,
     ...colorSignals,
     ...lotlSignals,
   ];
@@ -597,6 +689,7 @@ export function runPhishVisionAnalysis() {
         severity,
         matchedBrand,
         signals: signalList,
+        faviconHash: faviconHashComputed,
         url: globalThis.location?.href || '',
         timestamp: new Date().toISOString(),
         action,

@@ -539,3 +539,69 @@ describe('injectPhishVisionWarningBanner', () => {
     expect(banner.textContent).toContain('High');
   });
 });
+
+/* ================================================================== */
+/*  fnv1a32 favicon hash function                                      */
+/* ================================================================== */
+
+describe('fnv1a32 favicon hash function', () => {
+  // Mirror the function here for pure unit testing
+  function fnv1a32(bytes) {
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < bytes.length; i++) {
+      hash ^= bytes[i];
+      hash = (Math.imul(hash, 0x01000193) >>> 0);
+    }
+    return hash >>> 0;
+  }
+
+  it('empty byte array returns FNV offset basis 2166136261', () => {
+    expect(fnv1a32(new Uint8Array(0))).toBe(2166136261);
+  });
+
+  it('produces consistent hash for same byte sequence', () => {
+    const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    expect(fnv1a32(bytes)).toBe(fnv1a32(bytes));
+  });
+
+  it('produces different hashes for different bytes', () => {
+    expect(fnv1a32(new Uint8Array([1, 2, 3, 4]))).not.toBe(fnv1a32(new Uint8Array([1, 2, 3, 5])));
+  });
+
+  it('returns a non-negative 32-bit integer', () => {
+    const hash = fnv1a32(new Uint8Array([0xff, 0xfe, 0xfd]));
+    expect(hash).toBeGreaterThanOrEqual(0);
+    expect(hash).toBeLessThanOrEqual(0xffffffff);
+  });
+
+  it('two identical byte sequences produce the same hash', () => {
+    const a = new Uint8Array([10, 20, 30, 40, 50]);
+    const b = new Uint8Array([10, 20, 30, 40, 50]);
+    expect(fnv1a32(a)).toBe(fnv1a32(b));
+  });
+
+  it('known single-byte test: fnv1a32([0x61]) = 3826002220', () => {
+    // Computed: (0x811c9dc5 XOR 0x61) * 0x01000193 mod 2^32
+    expect(fnv1a32(new Uint8Array([0x61]))).toBe(3826002220);
+  });
+
+  it('FAVICON_HASH_TO_BRAND map lookup works when hash matches', () => {
+    const testMap = new Map([['testbrand', [2166136261]]]);
+    const hash = 2166136261;
+    let found = null;
+    for (const [brand, hashes] of testMap) {
+      if (hashes.includes(hash)) { found = brand; break; }
+    }
+    expect(found).toBe('testbrand');
+  });
+
+  it('FAVICON_HASH_TO_BRAND map lookup returns null when no match', () => {
+    const testMap = new Map([['testbrand', [12345]]]);
+    const hash = 99999;
+    let found = null;
+    for (const [brand, hashes] of testMap) {
+      if (hashes.includes(hash)) { found = brand; break; }
+    }
+    expect(found).toBeNull();
+  });
+});

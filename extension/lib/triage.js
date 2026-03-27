@@ -392,6 +392,15 @@ const EVENT_CLASSIFICATION = {
     threatActor: 'Browser-based ransomware (RøB technique) / credential-harvesting PhaaS kits',
     description: 'File System Access API picker abuse for credential file exfiltration — showDirectoryPicker/showOpenFilePicker used to recursively enumerate directories and read credential-named files (~/.aws/credentials, ~/.kube/config, .env, shell histories) with network exfiltration within correlation window',
   },
+
+  // Wave 23: ThreatIntelSync
+  THREAT_INTEL_DOMAIN_HIT: {
+    category: 'reconnaissance',
+    mitreAttack: 'T1566.002',
+    mitreName: 'Phishing: Spearphishing Link',
+    threatActor: 'Multiple — confirmed active phishing infrastructure (PhishStats + phishnet.cc)',
+    description: 'Navigation to a domain in active external threat intelligence feeds — confirmed phishing infrastructure at time of last sync',
+  },
 };
 
 // ---------------------------------------------------------------------------

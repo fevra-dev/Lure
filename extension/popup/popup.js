@@ -70,6 +70,7 @@ const EVENT_TYPE_LABELS = {
   'EXTENSION_PROBE_DETECTED': 'Extension Probing',
   'PAYMENT_REQUEST_PHISHING_DETECTED': 'Payment Request Phish',
   'FILE_SYSTEM_PICKER_ABUSE_DETECTED': 'FS API Credential Exfil',
+  'THREAT_INTEL_DOMAIN_HIT': 'Threat Intel Hit',
 };
 
 /* ── DOM refs ───────────────────────────────────────────────── */
@@ -104,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const manifest = chrome.runtime.getManifest();
     document.getElementById('footerInfo').textContent =
-      `v${manifest.version} | 46 DETECTORS ACTIVE`;
+      `v${manifest.version} | 47 DETECTORS ACTIVE`;
   } catch (_) { /* non-extension context */ }
 
   // Toggle state
@@ -315,6 +316,8 @@ function briefDetail(event) {
     case 'FILE_SYSTEM_PICKER_ABUSE_DETECTED':
       return (event.credentialFilesDetected || []).slice(0, 2).join(', ') ||
              `${event.fileCount || 0} files`;
+    case 'THREAT_INTEL_DOMAIN_HIT':
+      return event.domain || '';
     default:
       return (event.signals || []).slice(0, 2).join(', ');
   }
