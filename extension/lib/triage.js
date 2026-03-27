@@ -374,6 +374,24 @@ const EVENT_CLASSIFICATION = {
     threatActor: 'Tycoon 2FA / EvilProxy / advanced PhaaS kits probing for security extensions',
     description: 'Page probing for security tool presence — toString reflection on wrapped APIs, iframe cross-frame verification, timing analysis, WAR extension fingerprinting, or CreepJS-style prototype lie detection',
   },
+
+  // Wave 21: PaymentRequestGuard
+  SUSPICIOUS_PAYMENT_REQUEST_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1056.003',
+    mitreName: 'Input Capture: Web Portal Capture',
+    threatActor: 'PhaaS kits abusing Payment Request API for PII collection without merchant context',
+    description: 'Suspicious Payment Request API usage on a phishing page — PII harvesting via browser-native payment UI without established merchant context',
+  },
+
+  // Wave 22: FileSystemGuard
+  FILE_SYSTEM_PICKER_ABUSE_DETECTED: {
+    category: 'credential_harvest',
+    mitreAttack: 'T1552.001',
+    mitreName: 'Unsecured Credentials: Credentials in Files',
+    threatActor: 'Browser-based ransomware (RøB technique) / credential-harvesting PhaaS kits',
+    description: 'File System Access API picker abuse for credential file exfiltration — showDirectoryPicker/showOpenFilePicker used to recursively enumerate directories and read credential-named files (~/.aws/credentials, ~/.kube/config, .env, shell histories) with network exfiltration within correlation window',
+  },
 };
 
 // ---------------------------------------------------------------------------

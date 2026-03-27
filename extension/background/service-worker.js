@@ -803,7 +803,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Wave 22: FileSystemGuard events
+  if (message.type === 'FILESYSTEMGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
   return false;
 });
 
-console.debug('[PHISHOPS] Service worker loaded — all Wave 1–21 detectors active');
+console.debug('[PHISHOPS] Service worker loaded — all Wave 1–22 detectors active');

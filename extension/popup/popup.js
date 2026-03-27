@@ -69,6 +69,7 @@ const EVENT_TYPE_LABELS = {
   'SPECULATION_RULES_PHISHING_DETECTED': 'Speculation Rules Phish',
   'EXTENSION_PROBE_DETECTED': 'Extension Probing',
   'PAYMENT_REQUEST_PHISHING_DETECTED': 'Payment Request Phish',
+  'FILE_SYSTEM_PICKER_ABUSE_DETECTED': 'FS API Credential Exfil',
 };
 
 /* ── DOM refs ───────────────────────────────────────────────── */
@@ -103,7 +104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const manifest = chrome.runtime.getManifest();
     document.getElementById('footerInfo').textContent =
-      `v${manifest.version} | 45 DETECTORS ACTIVE`;
+      `v${manifest.version} | 46 DETECTORS ACTIVE`;
   } catch (_) { /* non-extension context */ }
 
   // Toggle state
@@ -311,6 +312,9 @@ function briefDetail(event) {
       return event.rpId || '';
     case 'CLICKFIX_CLIPBOARD_INJECTION':
       return (event.payloadSnippet || '').substring(0, 30);
+    case 'FILE_SYSTEM_PICKER_ABUSE_DETECTED':
+      return (event.credentialFilesDetected || []).slice(0, 2).join(', ') ||
+             `${event.fileCount || 0} files`;
     default:
       return (event.signals || []).slice(0, 2).join(', ');
   }
