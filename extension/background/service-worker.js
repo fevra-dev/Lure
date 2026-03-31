@@ -479,6 +479,62 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
 }, { url: [{ schemes: ['http', 'https'] }] });
 
 // =============================================================================
+// Wave 24: SPANavigationMonitor — same-document navigation to login paths
+// =============================================================================
+
+const SPA_LOGIN_PATH_PATTERNS = [
+  /\/login/i,
+  /\/signin/i,
+  /\/sign-in/i,
+  /\/log-in/i,
+  /\/wp-admin/i,
+  /\/wp-login/i,
+  /\/account\/login/i,
+  /\/user\/login/i,
+  /\/auth\/login/i,
+  /\/portal\/login/i,
+  /\/secure\/login/i,
+  /\/myaccount\b/i,
+];
+
+const SPA_TRUSTED_PLATFORMS = [
+  'mail.google.com', 'outlook.office.com', 'outlook.live.com',
+  'app.slack.com', 'github.com', 'gitlab.com',
+];
+
+chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
+  if (details.frameId !== 0) return;
+  if (!details.url?.startsWith('http')) return;
+
+  let hostname, pathname;
+  try {
+    const u = new URL(details.url);
+    hostname = u.hostname.replace(/^www\./, '');
+    pathname = u.pathname;
+  } catch {
+    return;
+  }
+
+  const isTrusted = SPA_TRUSTED_PLATFORMS.some(
+    p => hostname === p || hostname.endsWith('.' + p),
+  );
+  if (isTrusted) return;
+
+  const matchesLoginPath = SPA_LOGIN_PATH_PATTERNS.some(re => re.test(pathname));
+  if (!matchesLoginPath) return;
+
+  emitTriagedTelemetry({
+    eventType: 'SPA_SUSPICIOUS_NAVIGATION',
+    severity: 'Medium',
+    riskScore: 0.50,
+    url: details.url.substring(0, 200),
+    pathname,
+    tabId: details.tabId,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// =============================================================================
 // Message routing — all content scripts -> telemetry
 // =============================================================================
 
@@ -576,6 +632,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Wave 7: WebRTCGuard events
   if (message.type === 'WEBRTCGUARD_EVENT') {
+    emitTriagedTelemetry({
+      ...message.payload,
+      tabId,
+      frameId,
+    });
+    sendResponse({ received: true });
+    return true;
+  }
+
+  // Wave 25: WebRTC Deepfake Sentinel events
+  if (message.type === 'WEBRTC_SYNTHETIC_TRACK_EVENT') {
     emitTriagedTelemetry({
       ...message.payload,
       tabId,
@@ -863,4 +930,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-console.debug('[PHISHOPS] Service worker loaded — Wave 1–22 detectors + ThreatIntelSync (Wave 23) active');
+console.debug('[PHISHOPS] Service worker loaded — Wave 1–25 detectors active (49 detectors)');

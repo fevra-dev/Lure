@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PhishOps Security Suite",
   "version": "1.0.0",
-  "description": "Browser-native phishing defence: 47 detectors covering OAuth abuse, HTML smuggling, extension supply chain, clipboard injection, fullscreen overlay, passkey theft, QR session hijacking, virtual camera detection, TOAD screen share, brand impersonation, AiTM proxy detection, browser sync hijacking, helpdesk platform abuse, FIDO downgrade attacks, IPFS gateway phishing, LOTL trusted domain abuse, AI-generated phishing detection, EvilnoVNC WebSocket AiTM, WebSocket credential exfiltration, Service Worker persistence, blockchain-hosted phishing (EtherHiding), notification abuse, WebTransport AiTM relay, canvas credential phishing, canvas keystroke capture, canvas credential exfiltration, Speculation Rules API phishing, security tool probing meta-detection, Payment Request API phishing signal, File System Access API credential exfiltration, threat intelligence feed synchronization (PhishStats + phishnet.cc), and agentic guardrails.",
+  "description": "Browser-native phishing defence: 49 detectors covering OAuth abuse, HTML smuggling, extension supply chain, clipboard injection, fullscreen overlay, passkey theft, QR session hijacking, virtual camera detection, TOAD screen share, brand impersonation, AiTM proxy detection, browser sync hijacking, helpdesk platform abuse, FIDO downgrade attacks, IPFS gateway phishing, LOTL trusted domain abuse, AI-generated phishing detection, EvilnoVNC WebSocket AiTM, WebSocket credential exfiltration, Service Worker persistence, blockchain-hosted phishing (EtherHiding), notification abuse, WebTransport AiTM relay, canvas credential phishing, canvas keystroke capture, canvas credential exfiltration, Speculation Rules API phishing, security tool probing meta-detection, Payment Request API phishing signal, File System Access API credential exfiltration, threat intelligence feed synchronization (PhishStats + phishnet.cc), SPA navigation phishing detection (pushState / Navigation API intercept), WebRTC synthetic track deepfake sentinel, and agentic guardrails.",
 
   "permissions": [
     "storage",
@@ -220,6 +220,17 @@
       "matches": ["<all_urls>"],
       "js": ["content/filesystem_guard_bridge.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/webrtc_synthetic_track_main.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/webrtc_synthetic_track_bridge.js"],
+      "run_at": "document_start"
     }
   ],
 
@@ -285,7 +296,9 @@
       "wave20_probeguard": "Security tool probing meta-detection (toString probing, iframe cross-frame verification, timing analysis, WAR fingerprinting, prototype lie detection) — content/probe_guard_main.js + bridge",
       "wave21_paymentrequestguard": "Payment Request API phishing signal — low-confidence supplementary constructor/show() monitoring (PII harvesting via browser-native payment UI) — content/payment_request_guard_main.js + bridge",
       "wave22_filesystemguard": "File System Access API picker abuse — showDirectoryPicker/showOpenFilePicker/showSaveFilePicker interception, credential file enumeration (.aws, .kube, .env, id_rsa, Login Data), post-read network exfiltration correlation — content/filesystem_guard_main.js + bridge",
-      "wave23_threatintelsync": "Periodic threat intel ingestion from PhishStats API + phishnet.cc feed.txt — domain/IP reputation lookup via chrome.alarms-based sync every 4h, stored in chrome.storage.local['threatIntel'], checked on webNavigation.onCommitted — lib/threat_intel_sync.js"
+      "wave23_threatintelsync": "Periodic threat intel ingestion from PhishStats API + phishnet.cc feed.txt — domain/IP reputation lookup via chrome.alarms-based sync every 4h, stored in chrome.storage.local['threatIntel'], checked on webNavigation.onCommitted — lib/threat_intel_sync.js",
+      "wave24_spanavigationnmonitor": "Same-document navigation (history.pushState + Navigation API intercept) to login-pattern paths — chrome.webNavigation.onHistoryStateUpdated listener, MITRE T1185 — background/service-worker.js",
+      "wave25_webrtcdeepfakesentinel": "MediaStreamTrackGenerator + MediaStreamTrackProcessor constructor Proxy interception — synthetic video track detection for browser-based deepfake injection into WebRTC calls, MITRE T1566.003 — content/webrtc_synthetic_track_main.js + bridge"
     },
     "backlog": {
       "trusted_types_compatibility": "Ensure all content script DOM manipulation uses TT-compatible APIs (textContent, createElement/appendChild, DOMPurify with RETURN_TRUSTED_TYPE: true) so PhishOps does not break on TT-enforcing sites (Google Workspace, YouTube, Meta properties).",

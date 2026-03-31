@@ -71,6 +71,8 @@ const EVENT_TYPE_LABELS = {
   'PAYMENT_REQUEST_PHISHING_DETECTED': 'Payment Request Phish',
   'FILE_SYSTEM_PICKER_ABUSE_DETECTED': 'FS API Credential Exfil',
   'THREAT_INTEL_DOMAIN_HIT': 'Threat Intel Hit',
+  'SPA_SUSPICIOUS_NAVIGATION': 'SPA Login Path',
+  'WEBRTC_SYNTHETIC_TRACK_DETECTED': 'Deepfake Track',
 };
 
 /* ── DOM refs ───────────────────────────────────────────────── */
@@ -105,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const manifest = chrome.runtime.getManifest();
     document.getElementById('footerInfo').textContent =
-      `v${manifest.version} | 47 DETECTORS ACTIVE`;
+      `v${manifest.version} | 49 DETECTORS ACTIVE`;
   } catch (_) { /* non-extension context */ }
 
   // Toggle state
@@ -318,6 +320,10 @@ function briefDetail(event) {
              `${event.fileCount || 0} files`;
     case 'THREAT_INTEL_DOMAIN_HIT':
       return event.domain || '';
+    case 'SPA_SUSPICIOUS_NAVIGATION':
+      return event.pathname || '';
+    case 'WEBRTC_SYNTHETIC_TRACK_DETECTED':
+      return (event.signals || []).slice(0, 2).join(', ') || '';
     default:
       return (event.signals || []).slice(0, 2).join(', ');
   }

@@ -401,6 +401,24 @@ const EVENT_CLASSIFICATION = {
     threatActor: 'Multiple — confirmed active phishing infrastructure (PhishStats + phishnet.cc)',
     description: 'Navigation to a domain in active external threat intelligence feeds — confirmed phishing infrastructure at time of last sync',
   },
+
+  // Wave 24: SPANavigationMonitor
+  SPA_SUSPICIOUS_NAVIGATION: {
+    category: 'credential-access',
+    mitreAttack: 'T1185',
+    mitreName: 'Browser Session Hijacking',
+    threatActor: 'Multiple — XSS-based SPA routing hijack, WordPress credential harvest via pushState',
+    description: 'Same-document navigation (pushState / Navigation API intercept) moved the URL bar to a login-pattern path without a real page load — a known SPA phishing technique where attacker-controlled JavaScript injects a credential form without triggering content script re-injection',
+  },
+
+  // Wave 25: WebRTC Deepfake Sentinel
+  WEBRTC_SYNTHETIC_TRACK_DETECTED: {
+    category: 'credential-access',
+    mitreAttack: 'T1566.003',
+    mitreName: 'Phishing: Spearphishing via Service',
+    threatActor: 'Scattered Spider / state actors — deepfake video call impersonation (Arup $25.6M, FinCEN FIN-2024-Alert004)',
+    description: 'MediaStreamTrackGenerator or MediaStreamTrackProcessor pipeline detected injecting a synthetic video track into a WebRTC PeerConnection — forensically stealthy deepfake delivery with no system-level device registration or enumerateDevices() entry',
+  },
 };
 
 // ---------------------------------------------------------------------------
