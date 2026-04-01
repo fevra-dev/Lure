@@ -149,7 +149,7 @@ describe('isDomainKnownBad', () => {
     badDomains: ['evil.com', 'phish.net'],
     badIPs: [],
     badExfilEndpoints: [],
-    lastSync: new Date().toISOString(),
+    lastSync: new Date().toISOString(), // fresh — within 7-day window
   };
 
   it('returns true for exact domain match', () => {
@@ -174,6 +174,58 @@ describe('isDomainKnownBad', () => {
 
   it('returns false when intel has empty badDomains', () => {
     expect(isDomainKnownBad('evil.com', { badDomains: [], badIPs: [], badExfilEndpoints: [] })).toBe(false);
+  });
+});
+
+describe('isDomainKnownBad — staleness', () => {
+  it('returns false when intel is older than 7 days', () => {
+    const staleDate = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+    const intel = {
+      badDomains: ['evil.com'],
+      badIPs: [],
+      badExfilEndpoints: [],
+      lastSync: staleDate,
+    };
+    expect(isDomainKnownBad('evil.com', intel)).toBe(false);
+  });
+
+  it('returns true when intel is fresh (within 7 days)', () => {
+    const freshDate = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString();
+    const intel = {
+      badDomains: ['evil.com'],
+      badIPs: [],
+      badExfilEndpoints: [],
+      lastSync: freshDate,
+    };
+    expect(isDomainKnownBad('evil.com', intel)).toBe(true);
+  });
+
+  it('returns false when lastSync is missing', () => {
+    const intel = { badDomains: ['evil.com'], badIPs: [], badExfilEndpoints: [] };
+    expect(isDomainKnownBad('evil.com', intel)).toBe(false);
+  });
+});
+
+describe('buildDomainSet — schema validation', () => {
+  it('skips records without url field', () => {
+    const records = [
+      { domain: 'evil.com', ip: '1.2.3.4' },
+      { url: 'https://real.com/phish', ip: '5.6.7.8' },
+    ];
+    const result = buildDomainSet(records);
+    expect(result).toContain('real.com');
+    expect(result).not.toContain('evil.com');
+  });
+
+  it('handles non-array input gracefully', () => {
+    expect(() => buildDomainSet(null)).not.toThrow();
+    expect(buildDomainSet(null)).toEqual([]);
+  });
+
+  it('handles records with empty url field', () => {
+    const result = buildDomainSet([{ url: '' }, { url: 'https://good.com' }]);
+    expect(result).toContain('good.com');
+    expect(result).toHaveLength(1);
   });
 });
 

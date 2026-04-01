@@ -51,9 +51,11 @@ export function parsePhishnetFeed(text) {
  * @returns {string[]}
  */
 export function buildDomainSet(records) {
+  if (!Array.isArray(records)) return [];
   const domains = new Set();
   for (const record of records) {
-    const domain = extractDomainFromUrl(record.url || '');
+    if (!record || typeof record.url !== 'string') continue;
+    const domain = extractDomainFromUrl(record.url);
     if (domain) domains.add(domain);
   }
   return [...domains];
@@ -65,9 +67,10 @@ export function buildDomainSet(records) {
  * @returns {string[]}
  */
 export function buildIPSet(records) {
+  if (!Array.isArray(records)) return [];
   const ips = new Set();
   for (const record of records) {
-    if (record.ip && typeof record.ip === 'string' && record.ip.trim()) {
+    if (record?.ip && typeof record.ip === 'string' && record.ip.trim()) {
       ips.add(record.ip.trim());
     }
   }
@@ -81,8 +84,10 @@ export function buildIPSet(records) {
  * @returns {string[]}
  */
 export function buildExfilEndpointSet(records) {
+  if (!Array.isArray(records)) return [];
   const endpoints = new Set();
   for (const record of records) {
+    if (!record) continue;
     const domain = extractDomainFromUrl(record.exfil_url || '');
     if (domain) endpoints.add(domain);
   }
@@ -111,14 +116,23 @@ export function extractDomainFromUrl(urlString) {
  * @param {Object|null} intel
  * @returns {boolean}
  */
+const MAX_INTEL_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 export function isDomainKnownBad(domain, intel) {
   if (!intel || !intel.badDomains?.length) return false;
+  if (!_isIntelFresh(intel)) return false;
   const badSet = new Set(intel.badDomains);
   const parts = domain.split('.');
   for (let i = 0; i < parts.length - 1; i++) {
     if (badSet.has(parts.slice(i).join('.'))) return true;
   }
   return false;
+}
+
+function _isIntelFresh(intel) {
+  if (!intel.lastSync) return false;
+  const age = Date.now() - new Date(intel.lastSync).getTime();
+  return age < MAX_INTEL_AGE_MS;
 }
 
 /**
