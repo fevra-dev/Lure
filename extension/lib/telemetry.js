@@ -7,6 +7,9 @@
  *   1. Logs to console.info (always — visible in DevTools)
  *   2. Persists to chrome.storage.local for the popup dashboard
  *
+ * Storage writes are serialized through a promise queue to prevent
+ * race conditions when multiple detectors fire simultaneously.
+ *
  * Production SOC deployment:
  *   Replace the storage-only path with an HTTP POST to an Azure Monitor
  *   Data Collection Rule (DCR) endpoint. The payload schema maps 1:1 to
@@ -30,6 +33,17 @@
 const STORAGE_KEY = 'phishops_events';
 const MAX_STORED_EVENTS = 200;
 
+// Serialization queue — each write waits for the previous to complete
+let _writeQueue = Promise.resolve();
+
+function _getExtensionVersion() {
+  try {
+    return chrome.runtime?.getManifest?.()?.version ?? 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 /**
  * Emit a structured detection event.
  *
@@ -42,30 +56,35 @@ export async function emitTelemetry(event) {
   const enriched = {
     ...event,
     timestamp: event.timestamp || new Date().toISOString(),
-    extensionVersion: '1.0.0',
+    extensionVersion: _getExtensionVersion(),
     source: 'PhishOps',
   };
 
   // 1. Console logging (always)
   console.info('[PHISHOPS_TELEMETRY]', JSON.stringify(enriched));
 
-  // 2. Persist to chrome.storage.local for popup dashboard
+  // 2. Persist to chrome.storage.local — serialized to prevent race conditions
+  _writeQueue = _writeQueue.then(() => _persistEvent(enriched)).catch(() => {});
+  await _writeQueue;
+}
+
+async function _persistEvent(enriched) {
   try {
-    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-      const data = await chrome.storage.local.get(STORAGE_KEY);
-      const events = data[STORAGE_KEY] || [];
-      events.unshift(enriched);
+    if (typeof chrome === 'undefined' || !chrome.storage?.local) return;
 
-      // Cap stored events to prevent unbounded growth
-      if (events.length > MAX_STORED_EVENTS) {
-        events.length = MAX_STORED_EVENTS;
-      }
+    const data = await chrome.storage.local.get(STORAGE_KEY);
+    const events = data[STORAGE_KEY] || [];
+    events.unshift(enriched);
 
-      await chrome.storage.local.set({ [STORAGE_KEY]: events });
-
-      // Update detection count for badge
-      await _updateBadge(events);
+    // Cap stored events to prevent unbounded growth
+    if (events.length > MAX_STORED_EVENTS) {
+      events.length = MAX_STORED_EVENTS;
     }
+
+    await chrome.storage.local.set({ [STORAGE_KEY]: events });
+
+    // Update detection count for badge
+    await _updateBadge(events);
   } catch (err) {
     console.debug('[PHISHOPS_TELEMETRY] storage write failed: %s', err.message);
   }

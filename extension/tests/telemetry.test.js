@@ -24,6 +24,9 @@ vi.stubGlobal('chrome', {
     setBadgeText: vi.fn(),
     setBadgeBackgroundColor: vi.fn(),
   },
+  runtime: {
+    getManifest: vi.fn(() => ({ version: '1.0.0' })),
+  },
 });
 
 // Now import after mocks are in place
@@ -62,6 +65,31 @@ describe('emitTelemetry', () => {
     const setArg = mockSet.mock.calls[0][0];
     expect(setArg.phishops_events[0].eventType).toBe('NEW_EVENT');
     expect(setArg.phishops_events[1].eventType).toBe('OLD_EVENT');
+  });
+
+  it('does not lose events when called concurrently', async () => {
+    mockGet.mockImplementation(async (key) => {
+      await new Promise(r => setTimeout(r, 10));
+      return { [key]: mockStorage[key] || null };
+    });
+
+    await Promise.all([
+      emitTelemetry({ eventType: 'EVENT_A', severity: 'High' }),
+      emitTelemetry({ eventType: 'EVENT_B', severity: 'Medium' }),
+    ]);
+
+    const lastSetCall = mockSet.mock.calls[mockSet.mock.calls.length - 1][0];
+    const stored = lastSetCall.phishops_events;
+    const types = stored.map(e => e.eventType);
+    expect(types).toContain('EVENT_A');
+    expect(types).toContain('EVENT_B');
+  });
+
+  it('reads extensionVersion from manifest when available', async () => {
+    await emitTelemetry({ eventType: 'VERSION_TEST' });
+    const setArg = mockSet.mock.calls[0][0];
+    const event = setArg.phishops_events[0];
+    expect(event.extensionVersion).toBe('1.0.0');
   });
 });
 
