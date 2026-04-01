@@ -89,6 +89,15 @@ def _evaluate_signals(result: AnalysisResult) -> list[Signal]:
             evidence=f"policy={ha.dmarc_policy}" if ha.dmarc_policy else None,
         ))
 
+    # ── SPF_SOFTFAIL ──────────────────────────────────────────────────────
+    if ha and ha.spf == AuthResult.SOFTFAIL:
+        fired.append(Signal(
+            name="SPF_SOFTFAIL",
+            weight=1.0,
+            trigger="SPF softfail (~all) — domain's policy suggests IP is not authorised",
+            evidence=ha.spf_details,
+        ))
+
     # ── REPLY_TO_MISMATCH ────────────────────────────────────────────────
     if ha and ha.reply_to_mismatch:
         fired.append(Signal(
@@ -171,6 +180,30 @@ def _evaluate_signals(result: AnalysisResult) -> list[Signal]:
                 trigger="No SPF, DKIM, or DMARC authentication results present",
             ))
 
+    # ── UNAUTHENTICATED_RELAY ─────────────────────────────────────────────
+    if ha:
+        for anomaly in ha.anomalies:
+            if "Unauthenticated relay" in anomaly:
+                fired.append(Signal(
+                    name="UNAUTHENTICATED_RELAY",
+                    weight=1.5,
+                    trigger="Email routed through an unauthenticated SMTP relay",
+                    evidence=anomaly,
+                ))
+                break
+
+    # ── TOR_INDICATOR ─────────────────────────────────────────────────────
+    if ha:
+        for anomaly in ha.anomalies:
+            if "no reverse DNS" in anomaly and ("Tor" in anomaly or "residential" in anomaly):
+                fired.append(Signal(
+                    name="TOR_INDICATOR",
+                    weight=1.5,
+                    trigger="Relay IP has no reverse DNS — possible Tor exit node",
+                    evidence=anomaly,
+                ))
+                break
+
     # ── YARA_MATCH ───────────────────────────────────────────────────────
     if result.yara_matches and result.yara_matches.total_matches > 0:
         rules = [m.rule_name for m in result.yara_matches.matches[:3]]
@@ -218,7 +251,7 @@ def score(result: AnalysisResult, settings: LureSettings) -> RiskScore:
         total_score=total,
         verdict=verdict,
         signals_fired=signals,
-        signals_evaluated=11,  # Total number of signal rules checked
+        signals_evaluated=14,  # Total number of signal rules checked
     )
 
     log.info(

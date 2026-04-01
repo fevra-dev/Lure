@@ -253,6 +253,39 @@ class TestIndividualSignals:
         sig = next(s for s in risk.signals_fired if s.name == "YARA_MATCH")
         assert sig.weight == 4.0
 
+    def test_spf_softfail_signal(self, settings):
+        """SPF softfail should fire a dedicated signal with weight 1.0."""
+        result = _make_result(
+            header_analysis=HeaderAnalysis(spf=AuthResult.SOFTFAIL, spf_details="~all"),
+        )
+        risk = score(result, settings)
+        names = [s.name for s in risk.signals_fired]
+        assert "SPF_SOFTFAIL" in names
+        sig = next(s for s in risk.signals_fired if s.name == "SPF_SOFTFAIL")
+        assert sig.weight == 1.0
+
+    def test_unauthenticated_relay_signal(self, settings):
+        """Unauthenticated relay anomaly should fire a signal."""
+        result = _make_result(
+            header_analysis=HeaderAnalysis(
+                anomalies=["Unauthenticated relay: hop 2 used SMTP (no AUTH)"],
+            ),
+        )
+        risk = score(result, settings)
+        names = [s.name for s in risk.signals_fired]
+        assert "UNAUTHENTICATED_RELAY" in names
+
+    def test_tor_indicator_signal(self, settings):
+        """Tor exit node anomaly should fire a signal."""
+        result = _make_result(
+            header_analysis=HeaderAnalysis(
+                anomalies=["Relay IP 185.220.101.42 has no reverse DNS \u2014 may be residential or Tor"],
+            ),
+        )
+        risk = score(result, settings)
+        names = [s.name for s in risk.signals_fired]
+        assert "TOR_INDICATOR" in names
+
 
 # =============================================================================
 # Edge cases
@@ -279,7 +312,7 @@ class TestEdgeCases:
     def test_signals_evaluated_count(self, settings):
         result = _make_result(header_analysis=HeaderAnalysis())
         risk = score(result, settings)
-        assert risk.signals_evaluated == 11
+        assert risk.signals_evaluated == 14
 
     def test_spf_softfail_does_not_trigger_spf_fail(self, settings):
         """SPF softfail is NOT the same as fail — should not fire SPF_FAIL signal."""
