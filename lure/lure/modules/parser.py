@@ -585,6 +585,16 @@ def _is_homograph(domain: str) -> bool:
             scripts.add("GEORGIAN")
         elif "CHEROKEE" in char_name:
             scripts.add("CHEROKEE")
+        elif "ARABIC" in char_name:
+            scripts.add("ARABIC")
+        elif "HEBREW" in char_name:
+            scripts.add("HEBREW")
+        elif "THAI" in char_name:
+            scripts.add("THAI")
+        elif "DEVANAGARI" in char_name:
+            scripts.add("DEVANAGARI")
+        elif "CJK" in char_name:
+            scripts.add("CJK")
 
     return len(scripts) > 1
 
