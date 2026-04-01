@@ -539,8 +539,9 @@ chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
 // =============================================================================
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  const tabId = sender.tab?.id ?? -1;
-  const frameId = sender.frameId ?? 0;
+  try {
+    const tabId = sender.tab?.id ?? -1;
+    const frameId = sender.frameId ?? 0;
 
   // Wave 2: blob credential detection result
   if (message.type === 'BLOB_CREDENTIAL_DETECTED') {
@@ -927,7 +928,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  return false;
+    return false;
+  } catch (err) {
+    console.error('[PHISHOPS] Message handler error:', err, 'message.type:', message?.type);
+    return false;
+  }
 });
 
 console.debug('[PHISHOPS] Service worker loaded — Wave 1–25 detectors active (49 detectors)');
