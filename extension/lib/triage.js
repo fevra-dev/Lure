@@ -404,7 +404,7 @@ const EVENT_CLASSIFICATION = {
 
   // Wave 24: SPANavigationMonitor
   SPA_SUSPICIOUS_NAVIGATION: {
-    category: 'credential-access',
+    category: 'credential_harvest',
     mitreAttack: 'T1185',
     mitreName: 'Browser Session Hijacking',
     threatActor: 'Multiple — XSS-based SPA routing hijack, WordPress credential harvest via pushState',
@@ -413,7 +413,7 @@ const EVENT_CLASSIFICATION = {
 
   // Wave 25: WebRTC Deepfake Sentinel
   WEBRTC_SYNTHETIC_TRACK_DETECTED: {
-    category: 'credential-access',
+    category: 'credential_harvest',
     mitreAttack: 'T1566.003',
     mitreName: 'Phishing: Spearphishing via Service',
     threatActor: 'Scattered Spider / state actors — deepfake video call impersonation (Arup $25.6M, FinCEN FIN-2024-Alert004)',
@@ -788,6 +788,56 @@ function getRecommendedActions(eventType, severity) {
       actions.push('Check if the page serves different content to browsers with vs without security extensions');
       actions.push('Report probing infrastructure to threat intelligence sharing platforms (MISP/OTX)');
       actions.push('Correlate with other detection events on the same domain or campaign cluster');
+      break;
+
+    case 'SUSPICION_RAISED':
+      actions.push('Monitor the page for credential field interaction within 30 seconds');
+      actions.push('Correlate with PhishVision, ProxyGuard, and other detectors on the same tab');
+      actions.push('If credential interaction occurs during suspicion window: escalate to guardrail bypass alert');
+      break;
+
+    case 'PHISHVISION_SUPPLEMENTARY_SIGNAL':
+      actions.push('Investigate the page for brand impersonation signals');
+      actions.push('Check if credential fields are present and visible');
+      actions.push('Correlate with other detection events on the same URL/domain');
+      break;
+
+    case 'SUSPICIOUS_PAYMENT_REQUEST_DETECTED':
+      actions.push('Verify the site is a legitimate merchant with established payment processing');
+      actions.push('Check if Payment Request API is being used to harvest PII on a non-commerce page');
+      actions.push('Block the domain at DNS/web proxy if phishing indicators are present');
+      actions.push('Report the page to Safe Browsing / PhishTank');
+      break;
+
+    case 'FILE_SYSTEM_PICKER_ABUSE_DETECTED':
+      actions.push('Check if credential files (.env, .aws/credentials, SSH keys) were read by the page');
+      actions.push('Block the page domain at DNS/web proxy immediately');
+      actions.push('Audit outbound network requests for exfiltration of file contents');
+      actions.push('If credential files were accessed: rotate all exposed credentials');
+      actions.push('Report the page to Safe Browsing / PhishTank');
+      break;
+
+    case 'THREAT_INTEL_DOMAIN_HIT':
+      actions.push('Block the domain at DNS/web proxy immediately — confirmed phishing infrastructure');
+      actions.push('Check if credentials were entered on the flagged page');
+      actions.push('If credentials compromised: force password reset for the affected user');
+      actions.push('Cross-reference the domain in PhishStats/phishnet.cc for campaign context');
+      actions.push('Search email gateway for delivery URLs linking to this domain');
+      break;
+
+    case 'SPA_SUSPICIOUS_NAVIGATION':
+      actions.push('Inspect the page for injected credential forms after the pushState navigation');
+      actions.push('Check if the navigation was triggered by user action or programmatic injection');
+      actions.push('Correlate with other detection events on the same tab (XSS indicators, PhishVision)');
+      actions.push('If credential forms are present: treat as credential harvest and block the domain');
+      break;
+
+    case 'WEBRTC_SYNTHETIC_TRACK_DETECTED':
+      actions.push('Terminate the video call if identity of the caller cannot be verified via a separate channel');
+      actions.push('Check for MediaStreamTrackGenerator/Processor usage — this indicates synthetic video injection');
+      actions.push('Verify the caller is known and expected (compare with meeting invite source)');
+      actions.push('If deepfake suspected: do not comply with any financial or credential-related requests');
+      actions.push('Report the incident to security team with WebRTC signal details for forensic analysis');
       break;
 
     default:

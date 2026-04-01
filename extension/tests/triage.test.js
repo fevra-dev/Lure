@@ -95,6 +95,44 @@ describe('triageEvent', () => {
     expect(result.triage.priority).toBe('P4');
   });
 
+  it('classifies SPA_SUSPICIOUS_NAVIGATION with valid category', () => {
+    const event = { eventType: 'SPA_SUSPICIOUS_NAVIGATION', severity: 'Medium' };
+    const result = triageEvent(event);
+    expect(result.triage.category).toBe('credential_harvest');
+    expect(result.triage.category).not.toBe('credential-access');
+  });
+
+  it('classifies WEBRTC_SYNTHETIC_TRACK_DETECTED with valid category', () => {
+    const event = { eventType: 'WEBRTC_SYNTHETIC_TRACK_DETECTED', severity: 'High' };
+    const result = triageEvent(event);
+    expect(result.triage.category).toBe('credential_harvest');
+    expect(result.triage.category).not.toBe('credential-access');
+  });
+
+  it('provides recommended actions for all Wave 21-25 event types', () => {
+    const eventTypes = [
+      'SUSPICIOUS_PAYMENT_REQUEST_DETECTED',
+      'FILE_SYSTEM_PICKER_ABUSE_DETECTED',
+      'THREAT_INTEL_DOMAIN_HIT',
+      'SPA_SUSPICIOUS_NAVIGATION',
+      'WEBRTC_SYNTHETIC_TRACK_DETECTED',
+    ];
+    for (const eventType of eventTypes) {
+      const result = triageEvent({ eventType, severity: 'High' });
+      expect(result.triage.recommendedActions.length,
+        `Expected actions for ${eventType}`).toBeGreaterThan(1);
+    }
+  });
+
+  it('provides recommended actions for AgentIntentGuard supplementary signals', () => {
+    const eventTypes = ['SUSPICION_RAISED', 'PHISHVISION_SUPPLEMENTARY_SIGNAL'];
+    for (const eventType of eventTypes) {
+      const result = triageEvent({ eventType, severity: 'Medium' });
+      expect(result.triage.recommendedActions.length,
+        `Expected actions for ${eventType}`).toBeGreaterThan(1);
+    }
+  });
+
   it('preserves original event fields alongside triage data', () => {
     const event = {
       eventType: 'OAUTH_DEVICE_CODE_FLOW',
