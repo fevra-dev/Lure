@@ -374,6 +374,7 @@ async function runOwnershipDriftCheck(extensionId) {
  * Monitor extension-origin requests for regular interval patterns
  * that suggest command-and-control communication.
  */
+const MAX_TRACKED_EXTENSIONS = 100;
 const c2RequestLog = new Map(); // extensionId -> timestamps[]
 
 function detectC2Polling(details) {
@@ -383,6 +384,20 @@ function detectC2Polling(details) {
 
     const extensionId = initiator.replace('chrome-extension://', '').split('/')[0];
     if (extensionId === chrome.runtime.id) return; // Skip self
+
+    // Safety cap: evict least-recently-active extension if at limit
+    if (!c2RequestLog.has(extensionId) && c2RequestLog.size >= MAX_TRACKED_EXTENSIONS) {
+      let oldestKey = null;
+      let oldestTime = Infinity;
+      for (const [key, ts] of c2RequestLog) {
+        const lastSeen = ts.length > 0 ? ts[ts.length - 1] : 0;
+        if (lastSeen < oldestTime) {
+          oldestTime = lastSeen;
+          oldestKey = key;
+        }
+      }
+      if (oldestKey) c2RequestLog.delete(oldestKey);
+    }
 
     const now = Date.now();
     if (!c2RequestLog.has(extensionId)) {
@@ -395,6 +410,10 @@ function detectC2Polling(details) {
     // Keep only last 60 minutes of data
     const cutoff = now - 60 * 60 * 1000;
     const recent = timestamps.filter(t => t > cutoff);
+    if (recent.length === 0) {
+      c2RequestLog.delete(extensionId);
+      return;
+    }
     c2RequestLog.set(extensionId, recent);
 
     // Check for polling pattern: 10+ requests with consistent intervals
