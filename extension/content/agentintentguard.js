@@ -27,7 +27,7 @@
 // AgentReasoningMonitor — inline (no external module dependency)
 // ---------------------------------------------------------------------------
 
-class AgentReasoningMonitor {
+export class AgentReasoningMonitor {
   constructor() {
     this._suspicious = false;
     this._watchTimeout = null;
@@ -37,7 +37,7 @@ class AgentReasoningMonitor {
 
   _init() {
     // Listen for credential field focus
-    document.addEventListener('focusin', (e) => {
+    this._onFocusIn = (e) => {
       const target = e.target;
       if (target?.tagName === 'INPUT' && target.type === 'password') {
         this._credentialFocused = true;
@@ -45,7 +45,8 @@ class AgentReasoningMonitor {
           this._fireAlert('credential_focus_during_suspicion');
         }
       }
-    });
+    };
+    document.addEventListener('focusin', this._onFocusIn);
 
     // Cross-module message bridge
     try {
@@ -62,6 +63,17 @@ class AgentReasoningMonitor {
 
     // GAN-optimised page check (Plan G4)
     this._checkGanOptimisedPage();
+  }
+
+  /**
+   * Tear down listeners — useful for testing and cleanup.
+   */
+  destroy() {
+    document.removeEventListener('focusin', this._onFocusIn);
+    if (this._watchTimeout) {
+      clearTimeout(this._watchTimeout);
+      this._watchTimeout = null;
+    }
   }
 
   /**
@@ -157,8 +169,12 @@ class AgentReasoningMonitor {
   }
 }
 
-// Bootstrap
-const monitor = new AgentReasoningMonitor();
+// ---------------------------------------------------------------------------
+// Auto-run when injected as a content script
+// ---------------------------------------------------------------------------
 
-console.debug('[AGENTINTENTGUARD] content script active url=%s',
-  window.location.href.substring(0, 80));
+if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
+  const monitor = new AgentReasoningMonitor();
+  console.debug('[AGENTINTENTGUARD] content script active url=%s',
+    window.location.href.substring(0, 80));
+}
