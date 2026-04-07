@@ -19,6 +19,55 @@ vi.stubGlobal('chrome', {
   },
 });
 
+// jsdom polyfills — Blob.text, ClipboardItem, DataTransfer, ClipboardEvent
+// are not implemented (or incomplete) in jsdom. Shim the minimal surface
+// used by the defender.
+if (typeof Blob !== 'undefined' && typeof Blob.prototype.text !== 'function') {
+  Blob.prototype.text = function text() {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(this);
+    });
+  };
+}
+
+if (typeof globalThis.ClipboardItem === 'undefined') {
+  globalThis.ClipboardItem = class ClipboardItem {
+    constructor(items) {
+      this._items = items;
+      this.types = Object.keys(items);
+    }
+    async getType(type) {
+      return this._items[type];
+    }
+  };
+}
+
+if (typeof globalThis.DataTransfer === 'undefined') {
+  globalThis.DataTransfer = class DataTransfer {
+    constructor() {
+      this._data = {};
+    }
+    setData(type, value) {
+      this._data[type] = String(value);
+    }
+    getData(type) {
+      return this._data[type] || '';
+    }
+  };
+}
+
+if (typeof globalThis.ClipboardEvent === 'undefined') {
+  globalThis.ClipboardEvent = class ClipboardEvent extends Event {
+    constructor(type, init = {}) {
+      super(type, init);
+      this.clipboardData = init.clipboardData || new globalThis.DataTransfer();
+    }
+  };
+}
+
 import {
   checkPayloadSignals,
   checkPageContextSignals,
@@ -399,5 +448,167 @@ describe('installClipboardInterceptor', () => {
     expect(mockSendMessage).toHaveBeenCalled();
     const call = mockSendMessage.mock.calls[0][0];
     expect(call.payload.action).toBe('alerted');
+  });
+});
+
+// =========================================================================
+// Extended API coverage: clipboard.write()
+// =========================================================================
+
+describe('clipboard.write() interception', () => {
+  let originalWrite;
+  let originalWriteText;
+
+  beforeEach(() => {
+    originalWrite = vi.fn().mockResolvedValue(undefined);
+    originalWriteText = vi.fn().mockResolvedValue(undefined);
+    const clipboardObj = {
+      writeText: originalWriteText,
+      write: originalWrite,
+    };
+    Object.defineProperty(navigator, 'clipboard', {
+      value: clipboardObj,
+      writable: true,
+      configurable: true,
+    });
+    document.getElementById('phishops-clickfix-warning')?.remove();
+  });
+
+  it('allows benign ClipboardItem through', async () => {
+    installClipboardInterceptor();
+    const blob = new Blob(['Hello world, this is perfectly normal clipboard content.'], { type: 'text/plain' });
+    const item = new ClipboardItem({ 'text/plain': blob });
+    await navigator.clipboard.write([item]);
+    expect(originalWrite).toHaveBeenCalled();
+  });
+
+  it('blocks malicious text/plain ClipboardItem', async () => {
+    installClipboardInterceptor();
+    const payload = 'powershell -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkA';
+    const blob = new Blob([payload], { type: 'text/plain' });
+    const item = new ClipboardItem({ 'text/plain': blob });
+    await expect(navigator.clipboard.write([item])).rejects.toThrow('Clipboard write blocked');
+    expect(mockSendMessage).toHaveBeenCalled();
+    expect(mockSendMessage.mock.calls[0][0].payload.action).toBe('blocked');
+  });
+
+  it('passes through ClipboardItems without text/plain', async () => {
+    installClipboardInterceptor();
+    const blob = new Blob(['<b>bold</b>'], { type: 'text/html' });
+    const item = new ClipboardItem({ 'text/html': blob });
+    await navigator.clipboard.write([item]);
+    expect(originalWrite).toHaveBeenCalled();
+  });
+});
+
+// =========================================================================
+// Extended API coverage: execCommand('copy')
+// =========================================================================
+
+describe('execCommand copy interception', () => {
+  let originalExecCommand;
+
+  beforeEach(() => {
+    originalExecCommand = vi.fn().mockReturnValue(true);
+    document.execCommand = originalExecCommand;
+    const clipboardObj = {
+      writeText: vi.fn().mockResolvedValue(undefined),
+      write: vi.fn().mockResolvedValue(undefined),
+    };
+    Object.defineProperty(navigator, 'clipboard', {
+      value: clipboardObj,
+      writable: true,
+      configurable: true,
+    });
+    document.getElementById('phishops-clickfix-warning')?.remove();
+  });
+
+  it('allows non-copy execCommand through unchanged', () => {
+    installClipboardInterceptor();
+    document.execCommand('bold');
+    expect(originalExecCommand).toHaveBeenCalledWith('bold');
+  });
+
+  it('allows benign copy selection through', () => {
+    installClipboardInterceptor();
+    const mockSelection = { toString: () => 'Just some normal text that a user selected on the page.' };
+    vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection);
+
+    document.execCommand('copy');
+    expect(originalExecCommand).toHaveBeenCalledWith('copy');
+  });
+
+  it('blocks copy of malicious selection', () => {
+    installClipboardInterceptor();
+    const malicious = 'powershell -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkA';
+    const mockSelection = { toString: () => malicious };
+    vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection);
+
+    const result = document.execCommand('copy');
+    expect(result).toBe(false);
+    expect(originalExecCommand).not.toHaveBeenCalledWith('copy');
+    expect(mockSendMessage).toHaveBeenCalled();
+    expect(mockSendMessage.mock.calls[0][0].payload.action).toBe('blocked');
+  });
+});
+
+// =========================================================================
+// Extended API coverage: copy event manipulation detection
+// =========================================================================
+
+describe('copy event manipulation detection', () => {
+  beforeEach(() => {
+    const clipboardObj = {
+      writeText: vi.fn().mockResolvedValue(undefined),
+      write: vi.fn().mockResolvedValue(undefined),
+    };
+    Object.defineProperty(navigator, 'clipboard', {
+      value: clipboardObj,
+      writable: true,
+      configurable: true,
+    });
+    document.execCommand = vi.fn().mockReturnValue(true);
+    document.getElementById('phishops-clickfix-warning')?.remove();
+  });
+
+  it('detects when copy event handler replaces selection with malicious content', () => {
+    installClipboardInterceptor();
+
+    // { once: true } so this attacker listener doesn't leak into later tests
+    document.addEventListener('copy', (e) => {
+      e.clipboardData.setData('text/plain',
+        'powershell -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkA');
+      e.preventDefault();
+    }, { once: true });
+
+    vi.spyOn(window, 'getSelection').mockReturnValue({ toString: () => 'benign selected text' });
+
+    const clipboardData = new DataTransfer();
+    const copyEvent = new ClipboardEvent('copy', { clipboardData, cancelable: true });
+    document.dispatchEvent(copyEvent);
+
+    expect(mockSendMessage).toHaveBeenCalled();
+    const calls = mockSendMessage.mock.calls.filter(
+      c => c[0]?.payload?.vector === 'copy_event',
+    );
+    expect(calls.length).toBeGreaterThanOrEqual(1);
+    expect(calls[0][0].payload.action).toBe('alerted');
+  });
+
+  it('does not alert when copy event content matches selection', () => {
+    installClipboardInterceptor();
+
+    const benign = 'Just some normal text that a user selected on the page.';
+    vi.spyOn(window, 'getSelection').mockReturnValue({ toString: () => benign });
+
+    const clipboardData = new DataTransfer();
+    clipboardData.setData('text/plain', benign);
+    const copyEvent = new ClipboardEvent('copy', { clipboardData, cancelable: true });
+    document.dispatchEvent(copyEvent);
+
+    const calls = mockSendMessage.mock.calls.filter(
+      c => c[0]?.payload?.vector === 'copy_event',
+    );
+    expect(calls).toHaveLength(0);
   });
 });

@@ -321,6 +321,190 @@ export function installClipboardInterceptor() {
     // Fallback: direct assignment
     navigator.clipboard.writeText = defender;
   }
+
+  // ── clipboard.write() interception ──────────────────────────────────
+  const originalWrite = navigator.clipboard?.write?.bind(navigator.clipboard);
+  if (originalWrite) {
+    const writeDefender = async function writeInterceptor(data) {
+      if (isAllowlistedOrigin()) return originalWrite(data);
+
+      try {
+        for (const item of data) {
+          if (item.types.includes('text/plain')) {
+            const blob = await item.getType('text/plain');
+            const text = await blob.text();
+
+            if (!text || text.length < MIN_PAYLOAD_LENGTH) continue;
+
+            const payloadSignals = checkPayloadSignals(text);
+            const pageSignals = payloadSignals.length > 0 ? checkPageContextSignals() : [];
+            const allSignals = [...payloadSignals, ...pageSignals];
+            const { riskScore, signalList } = calculateClickFixRiskScore(allSignals);
+
+            const timeSinceGesture = Date.now() - lastUserGestureTimestamp;
+            const userInitiated = timeSinceGesture < 500;
+            let effectiveBlockThreshold = BLOCK_THRESHOLD;
+            if (isElevatedThresholdOrigin()) effectiveBlockThreshold = 0.80;
+
+            if (riskScore >= effectiveBlockThreshold && !userInitiated) {
+              sendToBackground({
+                eventType: 'CLICKFIX_CLIPBOARD_INJECTION',
+                riskScore,
+                severity: riskScore >= 0.90 ? 'Critical' : riskScore >= 0.65 ? 'High' : 'Medium',
+                payloadSnippet: text.substring(0, 200),
+                signals: signalList,
+                url: window.location.href.substring(0, 200),
+                timestamp: new Date().toISOString(),
+                action: 'blocked',
+                vector: 'clipboard.write',
+              });
+              injectClickFixWarningBanner(riskScore, text, signalList);
+              return Promise.reject(new DOMException('Clipboard write blocked by PhishOps', 'NotAllowedError'));
+            }
+
+            if (riskScore >= ALERT_THRESHOLD) {
+              sendToBackground({
+                eventType: 'CLICKFIX_CLIPBOARD_INJECTION',
+                riskScore,
+                severity: 'Medium',
+                payloadSnippet: text.substring(0, 200),
+                signals: signalList,
+                url: window.location.href.substring(0, 200),
+                timestamp: new Date().toISOString(),
+                action: 'alerted',
+                vector: 'clipboard.write',
+              });
+              injectClickFixWarningBanner(riskScore, text, signalList);
+            }
+          }
+        }
+      } catch (_) {
+        // Don't break clipboard on inspection failure
+      }
+      return originalWrite(data);
+    };
+
+    try {
+      Object.defineProperty(navigator.clipboard, 'write', {
+        value: writeDefender,
+        writable: false,
+        configurable: true,
+      });
+    } catch {
+      navigator.clipboard.write = writeDefender;
+    }
+  }
+
+  // ── execCommand('copy') interception ────────────────────────────────
+  if (typeof document.execCommand !== 'function') return;
+  const originalExecCommand = document.execCommand.bind(document);
+  document.execCommand = function execCommandInterceptor(command, ...args) {
+    if (command !== 'copy' || isAllowlistedOrigin()) {
+      return originalExecCommand(command, ...args);
+    }
+
+    const selection = window.getSelection?.()?.toString() || '';
+    if (selection.length < MIN_PAYLOAD_LENGTH) {
+      return originalExecCommand(command, ...args);
+    }
+
+    const payloadSignals = checkPayloadSignals(selection);
+    if (payloadSignals.length === 0) {
+      return originalExecCommand(command, ...args);
+    }
+
+    const pageSignals = checkPageContextSignals();
+    const allSignals = [...payloadSignals, ...pageSignals];
+    const { riskScore, signalList } = calculateClickFixRiskScore(allSignals);
+
+    const timeSinceGesture = Date.now() - lastUserGestureTimestamp;
+    const userInitiated = timeSinceGesture < 500;
+    let effectiveBlockThreshold = BLOCK_THRESHOLD;
+    if (isElevatedThresholdOrigin()) effectiveBlockThreshold = 0.80;
+
+    if (riskScore >= effectiveBlockThreshold && !userInitiated) {
+      sendToBackground({
+        eventType: 'CLICKFIX_CLIPBOARD_INJECTION',
+        riskScore,
+        severity: riskScore >= 0.90 ? 'Critical' : riskScore >= 0.65 ? 'High' : 'Medium',
+        payloadSnippet: selection.substring(0, 200),
+        signals: signalList,
+        url: window.location.href.substring(0, 200),
+        timestamp: new Date().toISOString(),
+        action: 'blocked',
+        vector: 'execCommand',
+      });
+      injectClickFixWarningBanner(riskScore, selection, signalList);
+      return false;
+    }
+
+    if (riskScore >= ALERT_THRESHOLD) {
+      sendToBackground({
+        eventType: 'CLICKFIX_CLIPBOARD_INJECTION',
+        riskScore,
+        severity: 'Medium',
+        payloadSnippet: selection.substring(0, 200),
+        signals: signalList,
+        url: window.location.href.substring(0, 200),
+        timestamp: new Date().toISOString(),
+        action: 'alerted',
+        vector: 'execCommand',
+      });
+      injectClickFixWarningBanner(riskScore, selection, signalList);
+    }
+
+    return originalExecCommand(command, ...args);
+  };
+
+  // ── copy event manipulation detection (detect-only, cannot block) ───
+  // Wrap clipboardData.setData at capturing phase. When an attacker's copy
+  // handler calls setData('text/plain', ...) to substitute the clipboard
+  // content, our wrapper sees the new value synchronously and can alert
+  // if it differs from the user's actual selection and looks malicious.
+  // We can't preventDefault() retroactively, so this vector is detect-only.
+  document.addEventListener('copy', (e) => {
+    if (isAllowlistedOrigin()) return;
+
+    const originalSelection = window.getSelection?.()?.toString() || '';
+    const origSetData = e.clipboardData?.setData?.bind(e.clipboardData);
+    if (!origSetData) return;
+
+    e.clipboardData.setData = function setDataInterceptor(type, value) {
+      const result = origSetData(type, value);
+      if (type !== 'text/plain' && type !== 'text') return result;
+
+      try {
+        const text = String(value ?? '');
+        if (text === originalSelection) return result;
+        if (text.length < MIN_PAYLOAD_LENGTH) return result;
+
+        const payloadSignals = checkPayloadSignals(text);
+        if (payloadSignals.length === 0) return result;
+
+        const pageSignals = checkPageContextSignals();
+        const allSignals = [...payloadSignals, ...pageSignals];
+        const { riskScore, signalList } = calculateClickFixRiskScore(allSignals);
+
+        if (riskScore >= ALERT_THRESHOLD) {
+          sendToBackground({
+            eventType: 'CLICKFIX_CLIPBOARD_INJECTION',
+            riskScore,
+            severity: riskScore >= 0.90 ? 'Critical' : riskScore >= 0.65 ? 'High' : 'Medium',
+            payloadSnippet: text.substring(0, 200),
+            signals: signalList,
+            url: window.location.href.substring(0, 200),
+            timestamp: new Date().toISOString(),
+            action: 'alerted',
+            vector: 'copy_event',
+          });
+          injectClickFixWarningBanner(riskScore, text, signalList);
+        }
+      } catch (_) {
+        // Don't break copy on inspection failure
+      }
+      return result;
+    };
+  }, true); // Capturing phase — runs before attacker's copy handler
 }
 
 // ---------------------------------------------------------------------------
