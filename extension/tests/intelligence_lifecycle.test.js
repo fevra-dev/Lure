@@ -105,7 +105,7 @@ describe('deduplicateEvents', () => {
 // ---------------------------------------------------------------------------
 
 describe('correlateEvents', () => {
-  it('groups related OAuth events within 15-minute window', () => {
+  it('groups related OAuth events within 2-hour window', () => {
     const events = [
       { eventType: 'OAUTH_DEVICE_CODE_FLOW', timestamp: '2026-03-17T00:00:00Z', url: 'https://a.com', riskScore: 0.90 },
       { eventType: 'OAUTH_STATE_EMAIL_ENCODED', timestamp: '2026-03-17T00:05:00Z', url: 'https://b.com', riskScore: 0.85 },
@@ -114,6 +114,27 @@ describe('correlateEvents', () => {
     expect(campaigns).toHaveLength(1);
     expect(campaigns[0].eventTypes).toContain('OAUTH_DEVICE_CODE_FLOW');
     expect(campaigns[0].eventTypes).toContain('OAUTH_STATE_EMAIL_ENCODED');
+  });
+
+  it('correlates related events 90 minutes apart', () => {
+    const events = [
+      { eventType: 'OAUTH_DEVICE_CODE_FLOW', timestamp: '2026-03-17T00:00:00Z', url: 'https://a.com', riskScore: 0.90 },
+      { eventType: 'OAUTH_STATE_EMAIL_ENCODED', timestamp: '2026-03-17T01:30:00Z', url: 'https://b.com', riskScore: 0.85 },
+    ];
+    const { campaigns } = correlateEvents(events);
+    expect(campaigns).toHaveLength(1);
+    expect(campaigns[0].eventTypes).toContain('OAUTH_DEVICE_CODE_FLOW');
+    expect(campaigns[0].eventTypes).toContain('OAUTH_STATE_EMAIL_ENCODED');
+  });
+
+  it('does not correlate related events more than 2 hours apart', () => {
+    const events = [
+      { eventType: 'OAUTH_DEVICE_CODE_FLOW', timestamp: '2026-03-17T00:00:00Z', url: 'https://a.com', riskScore: 0.90 },
+      { eventType: 'OAUTH_STATE_EMAIL_ENCODED', timestamp: '2026-03-17T02:01:00Z', url: 'https://b.com', riskScore: 0.85 },
+    ];
+    const { campaigns, uncorrelated } = correlateEvents(events);
+    expect(campaigns).toHaveLength(0);
+    expect(uncorrelated).toHaveLength(2);
   });
 
   it('does not group unrelated events', () => {

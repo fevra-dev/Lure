@@ -435,7 +435,7 @@ export function correlateEvents(events) {
   }
 
   // Group by 15-minute time windows
-  const WINDOW_MS = 15 * 60 * 1000;
+  const WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours — multi-stage attacks span hours
   const campaigns = [];
   const used = new Set();
 
