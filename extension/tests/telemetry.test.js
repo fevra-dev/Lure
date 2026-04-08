@@ -111,3 +111,46 @@ describe('clearStoredEvents', () => {
     expect(mockSet).toHaveBeenCalledWith({ phishops_events: [] });
   });
 });
+
+describe('clearEventsOlderThan', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete mockStorage.phishops_events;
+  });
+
+  it('removes events older than the cutoff and keeps newer ones', async () => {
+    const { clearEventsOlderThan } = await import('../lib/telemetry.js');
+    const now = Date.now();
+    mockStorage.phishops_events = [
+      { eventType: 'FRESH',  timestamp: new Date(now - 1 * 60 * 60 * 1000).toISOString() },   // 1h ago
+      { eventType: 'BORDER', timestamp: new Date(now - 6 * 60 * 60 * 1000).toISOString() },   // 6h ago
+      { eventType: 'OLD',    timestamp: new Date(now - 48 * 60 * 60 * 1000).toISOString() },  // 48h ago
+    ];
+
+    const removed = await clearEventsOlderThan(24 * 60 * 60 * 1000); // 24h
+
+    expect(removed).toBe(1);
+    const lastSet = mockSet.mock.calls.at(-1)[0];
+    const kept = lastSet.phishops_events.map((e) => e.eventType);
+    expect(kept).toEqual(['FRESH', 'BORDER']);
+  });
+
+  it('is a no-op when there are no events', async () => {
+    const { clearEventsOlderThan } = await import('../lib/telemetry.js');
+    const removed = await clearEventsOlderThan(24 * 60 * 60 * 1000);
+    expect(removed).toBe(0);
+  });
+
+  it('drops events with missing/invalid timestamps (treats them as old)', async () => {
+    const { clearEventsOlderThan } = await import('../lib/telemetry.js');
+    mockStorage.phishops_events = [
+      { eventType: 'NO_TS' },
+      { eventType: 'BAD_TS', timestamp: 'not-a-date' },
+      { eventType: 'FRESH', timestamp: new Date().toISOString() },
+    ];
+    const removed = await clearEventsOlderThan(24 * 60 * 60 * 1000);
+    expect(removed).toBe(2);
+    const lastSet = mockSet.mock.calls.at(-1)[0];
+    expect(lastSet.phishops_events.map((e) => e.eventType)).toEqual(['FRESH']);
+  });
+});

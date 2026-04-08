@@ -123,6 +123,38 @@ export async function clearStoredEvents() {
 }
 
 /**
+ * Remove events whose timestamp is older than `maxAgeMs` from now.
+ * Events with missing or unparseable timestamps are treated as old and removed.
+ *
+ * @param {number} maxAgeMs
+ * @returns {Promise<number>} number of events removed
+ */
+export async function clearEventsOlderThan(maxAgeMs) {
+  try {
+    if (typeof chrome === 'undefined' || !chrome.storage?.local) return 0;
+
+    const data = await chrome.storage.local.get(STORAGE_KEY);
+    const events = data[STORAGE_KEY] || [];
+    if (events.length === 0) return 0;
+
+    const cutoff = Date.now() - maxAgeMs;
+    const kept = events.filter((e) => {
+      const t = Date.parse(e.timestamp);
+      return Number.isFinite(t) && t >= cutoff;
+    });
+
+    const removed = events.length - kept.length;
+    if (removed > 0) {
+      await chrome.storage.local.set({ [STORAGE_KEY]: kept });
+    }
+    return removed;
+  } catch (err) {
+    console.debug('[PHISHOPS_TELEMETRY] clearEventsOlderThan failed: %s', err.message);
+    return 0;
+  }
+}
+
+/**
  * Update the extension badge with the count of recent high-severity events.
  * @param {Object[]} events
  */
