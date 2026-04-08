@@ -91,6 +91,8 @@ let isRunning = true;
 let totalCount = 0, highCount = 0, criticalCount = 0;
 let lastEventCount = 0;
 let heartbeatTimer = null;
+let currentEvents = [];
+let expandedIdx = -1;
 
 /* ── Lifecycle ──────────────────────────────────────────────── */
 
@@ -104,6 +106,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   telemetryText = document.getElementById('telemetryText');
   toggle = document.getElementById('activeToggle');
   eventsPanel = document.getElementById('eventsPanel');
+
+  eventsPanel.addEventListener('click', (e) => {
+    const row = e.target.closest('.event-row');
+    if (!row) return;
+    const idx = Number(row.dataset.idx);
+    expandedIdx = (expandedIdx === idx) ? -1 : idx;
+    renderEventsList(currentEvents);
+  });
 
   // Footer: version + detector count
   try {
@@ -423,13 +433,17 @@ const MAX_LIST_EVENTS = 50;
 
 function renderEventsList(events) {
   if (!eventsPanel) return;
+  currentEvents = events || [];
 
-  if (!events || events.length === 0) {
+  if (currentEvents.length === 0) {
+    expandedIdx = -1;
     eventsPanel.innerHTML = '<div class="events-empty">No events captured yet.</div>';
     return;
   }
 
-  const slice = events.slice(0, MAX_LIST_EVENTS);
+  const slice = currentEvents.slice(0, MAX_LIST_EVENTS);
+  if (expandedIdx >= slice.length) expandedIdx = -1;
+
   const frag = document.createDocumentFragment();
 
   slice.forEach((evt, idx) => {
@@ -446,10 +460,46 @@ function renderEventsList(events) {
       <span class="event-time">${_escapeHtml(_shortTime(evt.timestamp))}</span>
     `;
     frag.appendChild(row);
+
+    if (idx === expandedIdx) {
+      const drawer = document.createElement('div');
+      drawer.className = 'event-detail';
+      drawer.innerHTML = _renderEventDetail(evt);
+      frag.appendChild(drawer);
+    }
   });
 
   eventsPanel.innerHTML = '';
   eventsPanel.appendChild(frag);
+}
+
+function _renderEventDetail(evt) {
+  const lines = [];
+  const orderedKeys = ['eventType', 'severity', 'timestamp', 'url', 'signals', 'extensionVersion'];
+  const seen = new Set();
+
+  for (const k of orderedKeys) {
+    if (k in evt) {
+      lines.push(`<span class="event-detail-key">${_escapeHtml(k)}</span>${_escapeHtml(_formatValue(evt[k]))}`);
+      seen.add(k);
+    }
+  }
+
+  for (const k of Object.keys(evt)) {
+    if (seen.has(k) || k === 'source') continue;
+    lines.push(`<span class="event-detail-key">${_escapeHtml(k)}</span>${_escapeHtml(_formatValue(evt[k]))}`);
+  }
+
+  return lines.join('\n');
+}
+
+function _formatValue(v) {
+  if (v == null) return '';
+  if (Array.isArray(v)) return v.join(', ');
+  if (typeof v === 'object') {
+    try { return JSON.stringify(v); } catch { return String(v); }
+  }
+  return String(v);
 }
 
 function _detectorLabel(evt) {
