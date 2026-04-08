@@ -125,7 +125,7 @@ function extractPermissionsFromPage(doc) {
 /**
  * Check if consent page shows 3+ high-risk scopes simultaneously.
  */
-export function checkHighRiskPermissionCombo(doc, hostname) {
+function checkHighRiskPermissionCombo(doc, hostname) {
   if (!doc || !hostname) return [];
   if (!isConsentPage(doc, hostname)) return [];
 
@@ -147,7 +147,7 @@ export function checkHighRiskPermissionCombo(doc, hostname) {
 /**
  * Check for "unverified" publisher badge or publisher name mismatch.
  */
-export function checkUnverifiedPublisher(doc, hostname) {
+function checkUnverifiedPublisher(doc, hostname) {
   if (!doc || !hostname) return [];
   if (!isConsentPage(doc, hostname)) return [];
 
@@ -168,7 +168,7 @@ export function checkUnverifiedPublisher(doc, hostname) {
 /**
  * Check if user arrived at consent page from a non-IdP referrer.
  */
-export function checkConsentOnRedirectedPage(doc, hostname) {
+function checkConsentOnRedirectedPage(doc, hostname) {
   if (!doc || !hostname) return [];
   if (!isConsentPageDomain(hostname)) return [];
 
@@ -201,7 +201,7 @@ export function checkConsentOnRedirectedPage(doc, hostname) {
 /**
  * Check if app name on consent page impersonates a known brand.
  */
-export function checkAppNameBrandImpersonation(doc, hostname) {
+function checkAppNameBrandImpersonation(doc, hostname) {
   if (!doc || !hostname) return [];
   if (!isConsentPage(doc, hostname)) return [];
 
@@ -224,7 +224,7 @@ export function checkAppNameBrandImpersonation(doc, hostname) {
 /**
  * Check if app requests 5+ distinct permission scopes.
  */
-export function checkExcessiveScopeCount(doc, hostname) {
+function checkExcessiveScopeCount(doc, hostname) {
   if (!doc || !hostname) return [];
   if (!isConsentPage(doc, hostname)) return [];
 
@@ -245,7 +245,7 @@ export function checkExcessiveScopeCount(doc, hostname) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculateTpaRiskScore(signals) {
+function calculateTpaRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -258,7 +258,7 @@ export function calculateTpaRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectTpaWarningBanner(riskScore, signals) {
+function injectTpaWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-tpa-banner')) return;
 
@@ -296,7 +296,7 @@ export function injectTpaWarningBanner(riskScore, signals) {
 /*  Main Analysis                                                      */
 /* ------------------------------------------------------------------ */
 
-export function runTpaSentinelAnalysis() {
+function runTpaSentinelAnalysis() {
   if (typeof document === 'undefined') return;
 
   const hostname = globalThis.location?.hostname || '';
@@ -352,4 +352,25 @@ export function runTpaSentinelAnalysis() {
 
 if (typeof document !== 'undefined' && typeof process === 'undefined') {
   runTpaSentinelAnalysis();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['tpa_sentinel'] = {
+    checkHighRiskPermissionCombo,
+    checkUnverifiedPublisher,
+    checkConsentOnRedirectedPage,
+    checkAppNameBrandImpersonation,
+    checkExcessiveScopeCount,
+    calculateTpaRiskScore,
+    injectTpaWarningBanner,
+    runTpaSentinelAnalysis,
+  };
 }

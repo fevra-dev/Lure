@@ -109,7 +109,7 @@ if (typeof window !== 'undefined') {
 /**
  * Check if the page has login/auth context via URL, title, or body text.
  */
-export function hasLoginContext(doc) {
+function hasLoginContext(doc) {
   if (!doc) return false;
 
   const url = (doc.location?.href || '').toLowerCase();
@@ -130,7 +130,7 @@ export function hasLoginContext(doc) {
 /**
  * Check if the page has established e-commerce/merchant markers.
  */
-export function hasMerchantMarkers(doc) {
+function hasMerchantMarkers(doc) {
   if (!doc) return false;
 
   const url = (doc.location?.href || '').toLowerCase();
@@ -164,7 +164,7 @@ export function hasMerchantMarkers(doc) {
  * Signal 1: PaymentRequest constructor was called.
  * Weight: 0.15 — baseline detection of API usage (extremely rare on the web).
  */
-export function checkPaymentRequestCreated(records) {
+function checkPaymentRequestCreated(records) {
   if (!records || records.length === 0) return [];
 
   return [{
@@ -179,7 +179,7 @@ export function checkPaymentRequestCreated(records) {
  * Weight: 0.20 — requesting PII via the payment API on a phishing page
  * enables identity fraud without needing card data.
  */
-export function checkPiiFieldsRequested(records) {
+function checkPiiFieldsRequested(records) {
   if (!records || records.length === 0) return [];
 
   const anyPii = records.some(r =>
@@ -198,7 +198,7 @@ export function checkPiiFieldsRequested(records) {
  * Signal 3: PaymentRequest.show() was invoked (payment sheet displayed).
  * Weight: 0.15 — confirms the payment UI was actually triggered, not just constructed.
  */
-export function checkShowInvoked(records) {
+function checkShowInvoked(records) {
   if (!records || records.length === 0) return [];
 
   return [{
@@ -213,7 +213,7 @@ export function checkShowInvoked(records) {
  * Weight: 0.20 — legitimate Payment Request API usage almost always
  * occurs on recognisable merchant checkout pages.
  */
-export function checkNoEstablishedMerchant(records, doc) {
+function checkNoEstablishedMerchant(records, doc) {
   if (!records || records.length === 0 || !doc) return [];
 
   if (hasMerchantMarkers(doc)) return [];
@@ -229,7 +229,7 @@ export function checkNoEstablishedMerchant(records, doc) {
  * Weight: 0.15 — payment requests on login pages are anomalous;
  * legitimate login flows don't request payment.
  */
-export function checkLoginContextWithPayment(records, doc) {
+function checkLoginContextWithPayment(records, doc) {
   if (!records || records.length === 0 || !doc) return [];
 
   if (!hasLoginContext(doc)) return [];
@@ -244,7 +244,7 @@ export function checkLoginContextWithPayment(records, doc) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculatePrgRiskScore(signals) {
+function calculatePrgRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -257,7 +257,7 @@ export function calculatePrgRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectPrgWarningBanner(riskScore, signals) {
+function injectPrgWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-prg-banner')) return;
 
@@ -306,7 +306,7 @@ export function injectPrgWarningBanner(riskScore, signals) {
 /**
  * Run analysis on accumulated PaymentRequest observations.
  */
-export function runPrgAnalysis(doc, crRecords, shRecords) {
+function runPrgAnalysis(doc, crRecords, shRecords) {
   if (!doc || !crRecords || crRecords.length === 0) return;
 
   const createdSignals = checkPaymentRequestCreated(crRecords);
@@ -355,15 +355,15 @@ export function runPrgAnalysis(doc, crRecords, shRecords) {
 /*  Exported state accessors (for testing)                             */
 /* ------------------------------------------------------------------ */
 
-export function _getCreationRecords() {
+function _getCreationRecords() {
   return creationRecords;
 }
 
-export function _getShowRecords() {
+function _getShowRecords() {
   return showRecords;
 }
 
-export function _resetState() {
+function _resetState() {
   creationRecords.length = 0;
   showRecords.length = 0;
   analysisRun = false;
@@ -384,4 +384,30 @@ if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.run
       }, 2000);
     });
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['payment_request_guard_bridge'] = {
+    hasLoginContext,
+    hasMerchantMarkers,
+    checkPaymentRequestCreated,
+    checkPiiFieldsRequested,
+    checkShowInvoked,
+    checkNoEstablishedMerchant,
+    checkLoginContextWithPayment,
+    calculatePrgRiskScore,
+    injectPrgWarningBanner,
+    runPrgAnalysis,
+    _getCreationRecords,
+    _getShowRecords,
+    _resetState,
+  };
 }

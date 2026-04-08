@@ -6,18 +6,8 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkPaymentRequestCreated,
-  checkPiiFieldsRequested,
-  checkShowInvoked,
-  checkNoEstablishedMerchant,
-  checkLoginContextWithPayment,
-  calculatePrgRiskScore,
-  injectPrgWarningBanner,
-  hasLoginContext,
-  hasMerchantMarkers,
-  runPrgAnalysis,
-} from '../content/payment_request_guard_bridge.js';
+import '../content/payment_request_guard_bridge.js';
+const { checkPaymentRequestCreated, checkPiiFieldsRequested, checkShowInvoked, checkNoEstablishedMerchant, checkLoginContextWithPayment, calculatePrgRiskScore, injectPrgWarningBanner, hasLoginContext, hasMerchantMarkers, runPrgAnalysis } = globalThis.__phishopsExports['payment_request_guard_bridge'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

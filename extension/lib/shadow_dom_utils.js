@@ -27,7 +27,7 @@ const MAX_SHADOW_DEPTH = 5;
  * @param {number} [depth=0] - Current recursion depth (internal use)
  * @returns {Element[]} All matching elements including those in shadow roots
  */
-export function deepQuerySelectorAll(selector, root = document, depth = 0) {
+function deepQuerySelectorAll(selector, root = document, depth = 0) {
   const results = [];
 
   try {
@@ -52,4 +52,18 @@ export function deepQuerySelectorAll(selector, root = document, depth = 0) {
   } catch { /* ignore */ }
 
   return results;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge + global registration                           */
+/* ------------------------------------------------------------------ */
+// Loaded as a classic content script (must be listed in manifest before
+// any detector that needs it). Registers on globalThis so detectors and
+// vitest tests can both reach it.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsLib = globalThis.__phishopsLib || {};
+  globalThis.__phishopsLib.deepQuerySelectorAll = deepQuerySelectorAll;
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports.shadow_dom_utils = { deepQuerySelectorAll };
 }

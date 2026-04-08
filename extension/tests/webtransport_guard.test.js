@@ -6,17 +6,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkTransportOnCredentialPage,
-  checkSelfSignedCertHashes,
-  checkCrossOriginTransportWithCreds,
-  checkCredentialDataInStream,
-  checkTransportWithoutMediaContext,
-  calculateWtRiskScore,
-  injectWtWarningBanner,
-  parseWtHostname,
-  runWtAnalysis,
-} from '../content/webtransport_guard.js';
+import '../content/webtransport_guard.js';
+const { checkTransportOnCredentialPage, checkSelfSignedCertHashes, checkCrossOriginTransportWithCreds, checkCredentialDataInStream, checkTransportWithoutMediaContext, calculateWtRiskScore, injectWtWarningBanner, parseWtHostname, runWtAnalysis } = globalThis.__phishopsExports['webtransport_guard'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

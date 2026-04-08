@@ -111,7 +111,7 @@ const PROFILE_CREATION_KEYWORDS = [
  * Social engineering attacks direct users from helpdesk or remote support
  * pages to account sign-in flows.
  */
-export function checkSuspiciousReferrer(doc, hostname) {
+function checkSuspiciousReferrer(doc, hostname) {
   if (!doc || !hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -153,7 +153,7 @@ export function checkSuspiciousReferrer(doc, hostname) {
  * Detect pages containing sync setup instructions — social engineering
  * text that guides users to add accounts or enable browser sync.
  */
-export function checkSyncSetupInstructions(doc) {
+function checkSyncSetupInstructions(doc) {
   if (!doc) return [];
 
   const signals = [];
@@ -178,7 +178,7 @@ export function checkSyncSetupInstructions(doc) {
  * Detect remote support tool references on the current page.
  * Scattered Spider attacks often begin with a remote support session.
  */
-export function checkRemoteSupportContext(doc) {
+function checkRemoteSupportContext(doc) {
   if (!doc) return [];
 
   const signals = [];
@@ -205,7 +205,7 @@ export function checkRemoteSupportContext(doc) {
  * Detect pages that instruct users to create browser profiles or
  * sign in with specific provided credentials.
  */
-export function checkProfileCreationSocialEngineering(doc) {
+function checkProfileCreationSocialEngineering(doc) {
   if (!doc) return [];
 
   const signals = [];
@@ -232,7 +232,7 @@ export function checkProfileCreationSocialEngineering(doc) {
  * or the Google/Microsoft ecosystem. Unusual referrers suggest social
  * engineering.
  */
-export function checkNonStandardAccountFlow(doc, hostname) {
+function checkNonStandardAccountFlow(doc, hostname) {
   if (!doc || !hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -283,7 +283,7 @@ export function checkNonStandardAccountFlow(doc, hostname) {
  * @param {Array<{id: string, weight: number}>} signals
  * @returns {{ riskScore: number, signalList: string[] }}
  */
-export function calculateSyncGuardRiskScore(signals) {
+function calculateSyncGuardRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -299,7 +299,7 @@ export function calculateSyncGuardRiskScore(signals) {
 /**
  * Inject a warning banner for sync hijacking detection.
  */
-export function injectSyncGuardWarningBanner(riskScore, signals) {
+function injectSyncGuardWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-syncguard-banner')) return;
 
@@ -340,7 +340,7 @@ export function injectSyncGuardWarningBanner(riskScore, signals) {
 /**
  * Run full SyncGuard analysis on the current page.
  */
-export function runSyncGuardAnalysis() {
+function runSyncGuardAnalysis() {
   if (typeof document === 'undefined') return;
 
   const hostname = globalThis.location?.hostname || '';
@@ -395,4 +395,25 @@ export function runSyncGuardAnalysis() {
 
 if (typeof document !== 'undefined' && typeof process === 'undefined') {
   runSyncGuardAnalysis();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['sync_guard'] = {
+    checkSuspiciousReferrer,
+    checkSyncSetupInstructions,
+    checkRemoteSupportContext,
+    checkProfileCreationSocialEngineering,
+    checkNonStandardAccountFlow,
+    calculateSyncGuardRiskScore,
+    injectSyncGuardWarningBanner,
+    runSyncGuardAnalysis,
+  };
 }

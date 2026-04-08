@@ -30,7 +30,10 @@
 
 'use strict';
 
-import { deepQuerySelectorAll } from '../lib/shadow_dom_utils.js';
+// Provided by lib/shadow_dom_utils.js (loaded earlier in manifest as a
+// classic content script — registers on globalThis.__phishopsLib).
+const deepQuerySelectorAll = (typeof globalThis !== 'undefined' && globalThis.__phishopsLib?.deepQuerySelectorAll)
+  || ((sel, root = document) => Array.from((root || document).querySelectorAll(sel)));
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -64,7 +67,7 @@ const OAUTH_ENDPOINTS = [
  * Get all credential fields on the page.
  * @returns {Element[]}
  */
-export function getCredentialFields() {
+function getCredentialFields() {
   return deepQuerySelectorAll(CREDENTIAL_SELECTOR, document);
 }
 
@@ -75,7 +78,7 @@ export function getCredentialFields() {
  * @param {Element} field
  * @returns {{ id: string, weight: number }[]}
  */
-export function getFieldVisibilitySignals(field) {
+function getFieldVisibilitySignals(field) {
   const signals = [];
 
   // Check field and ancestors for hiding styles
@@ -168,7 +171,7 @@ export function getFieldVisibilitySignals(field) {
  * @param {Element|null} form - the field's parent form (if any)
  * @returns {boolean}
  */
-export function isLikelyFalsePositive(field, form) {
+function isLikelyFalsePositive(field, form) {
   // 1. Show/hide password toggle: adjacent button/label with reveal-like text
   const togglePattern = /\b(show|hide|eye|toggle|reveal|unmask)\b/i;
   const siblings = field.parentElement?.children || [];
@@ -228,7 +231,7 @@ export function isLikelyFalsePositive(field, form) {
  *
  * @returns {{ id: string, weight: number }[]}
  */
-export function checkClickjackingSignals() {
+function checkClickjackingSignals() {
   const signals = [];
   const credentialFields = getCredentialFields();
   if (credentialFields.length === 0) return signals;
@@ -315,7 +318,7 @@ export function checkClickjackingSignals() {
  * @param {{ fieldSignals: { id: string, weight: number }[], exfilSignals: { id: string, weight: number }[], clickjackSignals: { id: string, weight: number }[] }} params
  * @returns {{ riskScore: number, signalList: string[], vector: string }}
  */
-export function calculateAutofillRiskScore({ fieldSignals = [], exfilSignals = [], clickjackSignals = [] }) {
+function calculateAutofillRiskScore({ fieldSignals = [], exfilSignals = [], clickjackSignals = [] }) {
   // Vector 1: hidden field harvest
   const v1Score = Math.min(
     fieldSignals.reduce((sum, s) => sum + s.weight, 0) +
@@ -379,7 +382,7 @@ function getExfilSignals(form, hiddenFieldCount) {
  * @param {Element[]} fields
  * @param {number} riskScore
  */
-export function disableHiddenCredentialFields(fields, riskScore) {
+function disableHiddenCredentialFields(fields, riskScore) {
   for (const field of fields) {
     field.disabled = true;
     field.value = '';
@@ -395,7 +398,7 @@ export function disableHiddenCredentialFields(fields, riskScore) {
  *
  * @param {number} riskScore
  */
-export function restoreClickjackedPage(riskScore) {
+function restoreClickjackedPage(riskScore) {
   if (document.body) document.body.style.opacity = '1';
   if (document.documentElement) document.documentElement.style.opacity = '1';
 
@@ -427,7 +430,7 @@ export function restoreClickjackedPage(riskScore) {
  * @param {string} vector
  * @param {string[]} signals
  */
-export function injectAutofillWarningBanner(riskScore, vector, signals) {
+function injectAutofillWarningBanner(riskScore, vector, signals) {
   if (document.getElementById('phishops-autofill-warning')) return;
 
   const isClickjack = vector === 'extension_clickjacking';
@@ -499,7 +502,7 @@ function sendToBackground(payload) {
  *
  * @returns {{ detected: boolean, riskScore: number, vector: string, signals: string[] }}
  */
-export function runAudit() {
+function runAudit() {
   const credentialFields = getCredentialFields();
   if (credentialFields.length === 0) {
     return { detected: false, riskScore: 0, vector: '', signals: [] };
@@ -618,7 +621,7 @@ let _alerted = false; // Prevent duplicate alerts within the same page
  * Main entry point. Sets up Tier 1 observer, upgrading to Tier 2 when
  * credential fields are found.
  */
-export function runAutofillGuard() {
+function runAutofillGuard() {
   if (!document.body) return;
 
   // Quick check: do credential fields already exist?
@@ -746,4 +749,27 @@ if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.run
   } else {
     runAutofillGuard();
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['autofill_guard'] = {
+    getCredentialFields,
+    getFieldVisibilitySignals,
+    isLikelyFalsePositive,
+    checkClickjackingSignals,
+    calculateAutofillRiskScore,
+    disableHiddenCredentialFields,
+    restoreClickjackedPage,
+    injectAutofillWarningBanner,
+    runAudit,
+    runAutofillGuard,
+  };
 }

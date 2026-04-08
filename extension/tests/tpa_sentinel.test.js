@@ -6,15 +6,8 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkHighRiskPermissionCombo,
-  checkUnverifiedPublisher,
-  checkConsentOnRedirectedPage,
-  checkAppNameBrandImpersonation,
-  checkExcessiveScopeCount,
-  calculateTpaRiskScore,
-  injectTpaWarningBanner,
-} from '../content/tpa_sentinel.js';
+import '../content/tpa_sentinel.js';
+const { checkHighRiskPermissionCombo, checkUnverifiedPublisher, checkConsentOnRedirectedPage, checkAppNameBrandImpersonation, checkExcessiveScopeCount, calculateTpaRiskScore, injectTpaWarningBanner } = globalThis.__phishopsExports['tpa_sentinel'];
 
 function makeConsentDoc(bodyContent = '', hostname = 'login.microsoftonline.com') {
   // All TPA checks require consent page indicators in body text

@@ -65,7 +65,7 @@ let analysisRun = false;
 /**
  * Check if any WebTransport connection exists on a page with credential fields.
  */
-export function checkTransportOnCredentialPage(doc, connections) {
+function checkTransportOnCredentialPage(doc, connections) {
   if (!doc || !connections || connections.length === 0) return [];
 
   const credFields = doc.querySelectorAll(CREDENTIAL_SELECTORS);
@@ -84,7 +84,7 @@ export function checkTransportOnCredentialPage(doc, connections) {
  * Legitimate services use standard PKI; hash-pinned connections to unknown
  * servers indicate attacker-controlled ephemeral infrastructure.
  */
-export function checkSelfSignedCertHashes(connections) {
+function checkSelfSignedCertHashes(connections) {
   if (!connections || connections.length === 0) return [];
 
   for (const conn of connections) {
@@ -103,7 +103,7 @@ export function checkSelfSignedCertHashes(connections) {
  * Check if any WebTransport target hostname differs from the page origin
  * on a credential page.
  */
-export function checkCrossOriginTransportWithCreds(connections, pageHostname, doc) {
+function checkCrossOriginTransportWithCreds(connections, pageHostname, doc) {
   if (!connections || !pageHostname || !doc) return [];
 
   const credFields = doc.querySelectorAll(CREDENTIAL_SELECTORS);
@@ -127,7 +127,7 @@ export function checkCrossOriginTransportWithCreds(connections, pageHostname, do
  * Check if any stream/datagram write payload contains a substring matching
  * current credential field values.
  */
-export function checkCredentialDataInStream(connections, doc) {
+function checkCredentialDataInStream(connections, doc) {
   if (!connections || !doc) return [];
 
   const inputs = doc.querySelectorAll(CREDENTIAL_SELECTORS);
@@ -167,7 +167,7 @@ export function checkCredentialDataInStream(connections, doc) {
  * Check if page has WebTransport connections but no visible media/streaming
  * context, suggesting no legitimate reason for WebTransport use.
  */
-export function checkTransportWithoutMediaContext(doc, connections) {
+function checkTransportWithoutMediaContext(doc, connections) {
   if (!doc || !connections || connections.length === 0) return [];
 
   const hasMediaContext = MEDIA_CONTEXT_SELECTORS.some(sel => {
@@ -188,7 +188,7 @@ export function checkTransportWithoutMediaContext(doc, connections) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculateWtRiskScore(signals) {
+function calculateWtRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -201,7 +201,7 @@ export function calculateWtRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectWtWarningBanner(riskScore, signals) {
+function injectWtWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-wt-banner')) return;
 
@@ -250,7 +250,7 @@ export function injectWtWarningBanner(riskScore, signals) {
 /**
  * Parse hostname from a WebTransport URL (https:// scheme).
  */
-export function parseWtHostname(url) {
+function parseWtHostname(url) {
   try {
     return new URL(url).hostname;
   } catch {
@@ -266,7 +266,7 @@ export function parseWtHostname(url) {
  * Run analysis on accumulated WebTransport data.
  * Called periodically and on DOMContentLoaded.
  */
-export function runWtAnalysis(doc, connections, pageHostname) {
+function runWtAnalysis(doc, connections, pageHostname) {
   if (!doc || !connections || connections.length === 0) return;
 
   const transportSignals = checkTransportOnCredentialPage(doc, connections);
@@ -364,7 +364,7 @@ function wrapWritableStream(writable, connRecord) {
  * Wraps the WebTransport constructor, stream creation, and datagram writes
  * to monitor for credential exfiltration.
  */
-export function installWebTransportProxy() {
+function installWebTransportProxy() {
   if (typeof window === 'undefined' || !window.WebTransport) return;
 
   const OriginalWebTransport = window.WebTransport;
@@ -439,11 +439,11 @@ export function installWebTransportProxy() {
 /*  Exported state accessors (for testing)                             */
 /* ------------------------------------------------------------------ */
 
-export function _getWtConnections() {
+function _getWtConnections() {
   return wtConnections;
 }
 
-export function _resetState() {
+function _resetState() {
   wtConnections.length = 0;
   analysisRun = false;
 }
@@ -454,4 +454,29 @@ export function _resetState() {
 
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   installWebTransportProxy();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['webtransport_guard'] = {
+    checkTransportOnCredentialPage,
+    checkSelfSignedCertHashes,
+    checkCrossOriginTransportWithCreds,
+    checkCredentialDataInStream,
+    checkTransportWithoutMediaContext,
+    calculateWtRiskScore,
+    injectWtWarningBanner,
+    parseWtHostname,
+    runWtAnalysis,
+    installWebTransportProxy,
+    _getWtConnections,
+    _resetState,
+  };
 }

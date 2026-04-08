@@ -124,7 +124,7 @@ function tryDecode(rawValue) {
  * @param {string} url
  * @returns {StateAbuseResult}
  */
-export function detectStateParameterAbuse(url) {
+function detectStateParameterAbuse(url) {
   const CLEAN = (signals) => ({
     detected: false,
     type: '',
@@ -212,4 +212,18 @@ export function detectStateParameterAbuse(url) {
       signals: ['detector_error'],
     };
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['state_parameter_abuse'] = {
+    detectStateParameterAbuse,
+  };
 }

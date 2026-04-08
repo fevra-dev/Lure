@@ -66,7 +66,7 @@ function trackGesture() {
 }
 
 // Exported for testing
-export function _setLastGestureTimestamp(ts) {
+function _setLastGestureTimestamp(ts) {
   lastGestureTimestamp = ts;
 }
 
@@ -77,11 +77,11 @@ export function _setLastGestureTimestamp(ts) {
 let activeScreenShare = false;
 
 // Exported for testing
-export function _isScreenShareActive() {
+function _isScreenShareActive() {
   return activeScreenShare;
 }
 
-export function _setScreenShareActive(val) {
+function _setScreenShareActive(val) {
   activeScreenShare = val;
 }
 
@@ -94,7 +94,7 @@ export function _setScreenShareActive(val) {
  *
  * @returns {{ id: string, weight: number }[]}
  */
-export function checkScreenShareSignals() {
+function checkScreenShareSignals() {
   const signals = [];
 
   // Signal 1: Non-platform origin
@@ -144,7 +144,7 @@ export function checkScreenShareSignals() {
  * Check page context for tech support / remote assistance signals.
  * @returns {{ id: string, weight: number }[]}
  */
-export function checkScreenSharePageContext() {
+function checkScreenSharePageContext() {
   const signals = [];
 
   try {
@@ -179,7 +179,7 @@ export function checkScreenSharePageContext() {
 // Risk score calculation (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function calculateScreenShareRiskScore(signals) {
+function calculateScreenShareRiskScore(signals) {
   let score = 0.0;
   const signalList = [];
 
@@ -198,7 +198,7 @@ export function calculateScreenShareRiskScore(signals) {
 // Warning banner (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function injectScreenShareWarningBanner(riskScore, signals) {
+function injectScreenShareWarningBanner(riskScore, signals) {
   if (document.getElementById('phishops-screenshare-warning')) return;
 
   const banner = document.createElement('div');
@@ -302,7 +302,7 @@ function sendToBackground(payload) {
 
 let credentialListener = null;
 
-export function monitorCredentialFieldsDuringShare(stream) {
+function monitorCredentialFieldsDuringShare(stream) {
   activeScreenShare = true;
 
   // Listen for password field focus
@@ -357,7 +357,7 @@ export function monitorCredentialFieldsDuringShare(stream) {
 // getDisplayMedia interceptor (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function installGetDisplayMediaInterceptor() {
+function installGetDisplayMediaInterceptor() {
   // Track user gestures
   document.addEventListener('click', trackGesture, true);
   document.addEventListener('keydown', trackGesture, true);
@@ -416,4 +416,26 @@ export function installGetDisplayMediaInterceptor() {
 
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   installGetDisplayMediaInterceptor();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['screenshare_guard'] = {
+    _setLastGestureTimestamp,
+    _isScreenShareActive,
+    _setScreenShareActive,
+    checkScreenShareSignals,
+    checkScreenSharePageContext,
+    calculateScreenShareRiskScore,
+    injectScreenShareWarningBanner,
+    monitorCredentialFieldsDuringShare,
+    installGetDisplayMediaInterceptor,
+  };
 }

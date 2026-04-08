@@ -6,15 +6,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkSuspiciousReferrer,
-  checkSyncSetupInstructions,
-  checkRemoteSupportContext,
-  checkProfileCreationSocialEngineering,
-  checkNonStandardAccountFlow,
-  calculateSyncGuardRiskScore,
-  injectSyncGuardWarningBanner,
-} from '../content/sync_guard.js';
+import '../content/sync_guard.js';
+const { checkSuspiciousReferrer, checkSyncSetupInstructions, checkRemoteSupportContext, checkProfileCreationSocialEngineering, checkNonStandardAccountFlow, calculateSyncGuardRiskScore, injectSyncGuardWarningBanner } = globalThis.__phishopsExports['sync_guard'];
 
 function makeDoc(html = '<html><head></head><body></body></html>', options = {}) {
   const dom = new JSDOM(html, { url: options.url || 'https://example.com' });

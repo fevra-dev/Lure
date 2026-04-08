@@ -23,7 +23,8 @@ vi.stubGlobal('chrome', {
   },
 });
 
-import { AgentReasoningMonitor } from '../content/agentintentguard.js';
+import '../content/agentintentguard.js';
+const { AgentReasoningMonitor } = globalThis.__phishopsExports['agentintentguard'];
 
 describe('AgentReasoningMonitor', () => {
   let monitor;

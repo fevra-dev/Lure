@@ -66,7 +66,7 @@ let observer = null;
 /**
  * Check if a URL is cross-origin relative to the page hostname.
  */
-export function isUrlCrossOrigin(url, pageOrigin) {
+function isUrlCrossOrigin(url, pageOrigin) {
   if (!url || !pageOrigin) return false;
 
   try {
@@ -84,7 +84,7 @@ export function isUrlCrossOrigin(url, pageOrigin) {
  * @param {boolean} isDynamic - Whether the element was dynamically injected
  * @returns {object[]} Parsed rule entries
  */
-export function parseSpeculationRules(element, isDynamic) {
+function parseSpeculationRules(element, isDynamic) {
   if (!element) return [];
 
   let json;
@@ -127,7 +127,7 @@ export function parseSpeculationRules(element, isDynamic) {
  * Weight: 0.40 — near-zero false positives. Chrome blocks cross-site prerender,
  * so cross-origin prerender rules are essentially nonexistent in legitimate traffic.
  */
-export function checkCrossOriginPrerenderRule(rules, pageOrigin) {
+function checkCrossOriginPrerenderRule(rules, pageOrigin) {
   if (!rules || rules.length === 0 || !pageOrigin) return [];
 
   for (const rule of rules) {
@@ -151,7 +151,7 @@ export function checkCrossOriginPrerenderRule(rules, pageOrigin) {
  * Weight: 0.30 — high eagerness cross-origin prefetch reduces user's window
  * to notice a domain change on navigation.
  */
-export function checkCrossOriginEagerPrefetch(rules, pageOrigin) {
+function checkCrossOriginEagerPrefetch(rules, pageOrigin) {
   if (!rules || rules.length === 0 || !pageOrigin) return [];
 
   const highEagerness = new Set(['immediate', 'eager']);
@@ -179,7 +179,7 @@ export function checkCrossOriginEagerPrefetch(rules, pageOrigin) {
  * Weight: 0.25 — dynamic injection is an XSS indicator. Legitimate speculation
  * rules are typically in the initial HTML or HTTP header.
  */
-export function checkDynamicRuleInjection(rules) {
+function checkDynamicRuleInjection(rules) {
   if (!rules || rules.length === 0) return [];
 
   const dynamicCount = rules.filter(r => r.isDynamic).length;
@@ -196,7 +196,7 @@ export function checkDynamicRuleInjection(rules) {
  * Signal 4: Rule targets URLs with login/auth/credential keywords.
  * Weight: 0.20 — suspicious URL patterns in speculation rule targets.
  */
-export function checkSuspiciousUrlPattern(rules) {
+function checkSuspiciousUrlPattern(rules) {
   if (!rules || rules.length === 0) return [];
 
   for (const rule of rules) {
@@ -223,7 +223,7 @@ export function checkSuspiciousUrlPattern(rules) {
  * Weight: 0.15 — orphaned prerender rules indicate the prerender exists purely
  * to pre-load content without user-visible navigation intent.
  */
-export function checkPrerenderWithoutNavigation(rules, doc) {
+function checkPrerenderWithoutNavigation(rules, doc) {
   if (!rules || rules.length === 0 || !doc) return [];
 
   const prerenderUrls = [];
@@ -263,7 +263,7 @@ export function checkPrerenderWithoutNavigation(rules, doc) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculateSrgRiskScore(signals) {
+function calculateSrgRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -281,7 +281,7 @@ export function calculateSrgRiskScore(signals) {
  * Chrome cancels associated prerenders when the element is removed.
  * Only activates at BLOCK_THRESHOLD or above.
  */
-export function removeMaliciousRules(rules, riskScore) {
+function removeMaliciousRules(rules, riskScore) {
   if (riskScore < BLOCK_THRESHOLD) return 0;
 
   let removedCount = 0;
@@ -306,7 +306,7 @@ export function removeMaliciousRules(rules, riskScore) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectSrgWarningBanner(riskScore, signals) {
+function injectSrgWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-srg-banner')) return;
 
@@ -363,7 +363,7 @@ export function injectSrgWarningBanner(riskScore, signals) {
 /**
  * Run analysis on accumulated speculation rule entries.
  */
-export function runSrgAnalysis(doc, rules, pageOrigin) {
+function runSrgAnalysis(doc, rules, pageOrigin) {
   if (!doc || !rules || rules.length === 0) return;
 
   const crossOriginPrerenderSignals = checkCrossOriginPrerenderRule(rules, pageOrigin);
@@ -416,7 +416,7 @@ export function runSrgAnalysis(doc, rules, pageOrigin) {
 /**
  * Install the SpeculationRules monitor: static scan + MutationObserver.
  */
-export function installSpeculationRulesMonitor() {
+function installSpeculationRulesMonitor() {
   // Static scan: catch rules already in the HTML
   if (typeof document !== 'undefined') {
     const existing = document.querySelectorAll('script[type="speculationrules"]');
@@ -474,11 +474,11 @@ export function installSpeculationRulesMonitor() {
 /*  Exported state accessors (for testing)                             */
 /* ------------------------------------------------------------------ */
 
-export function _getSpeculationRules() {
+function _getSpeculationRules() {
   return speculationRules;
 }
 
-export function _resetState() {
+function _resetState() {
   speculationRules.length = 0;
   analysisRun = false;
   if (observer) {
@@ -493,4 +493,31 @@ export function _resetState() {
 
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   installSpeculationRulesMonitor();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['speculation_rules_guard'] = {
+    isUrlCrossOrigin,
+    parseSpeculationRules,
+    checkCrossOriginPrerenderRule,
+    checkCrossOriginEagerPrefetch,
+    checkDynamicRuleInjection,
+    checkSuspiciousUrlPattern,
+    checkPrerenderWithoutNavigation,
+    calculateSrgRiskScore,
+    removeMaliciousRules,
+    injectSrgWarningBanner,
+    runSrgAnalysis,
+    installSpeculationRulesMonitor,
+    _getSpeculationRules,
+    _resetState,
+  };
 }

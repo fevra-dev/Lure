@@ -6,18 +6,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkToStringProbing,
-  checkIframeVerification,
-  checkTimingLoop,
-  checkWarProbing,
-  checkPrototypeLieDetection,
-  calculateProbeRiskScore,
-  injectProbeWarningBanner,
-  runProbeAnalysis,
-  _getSignalRecords,
-  _resetState,
-} from '../content/probe_guard_bridge.js';
+import '../content/probe_guard_bridge.js';
+const { checkToStringProbing, checkIframeVerification, checkTimingLoop, checkWarProbing, checkPrototypeLieDetection, calculateProbeRiskScore, injectProbeWarningBanner, runProbeAnalysis, _getSignalRecords, _resetState } = globalThis.__phishopsExports['probe_guard_bridge'];
 
 /* ------------------------------------------------------------------ */
 /*  Setup                                                              */

@@ -6,17 +6,8 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkRegisterOnCredentialPage,
-  checkFetchHandlerInSwScript,
-  checkPushSubscribeWithCredContext,
-  checkCacheApiStoresCredentialPage,
-  checkBackgroundSyncRegistration,
-  calculateSwRiskScore,
-  injectSwWarningBanner,
-  isKnownFramework,
-  runSwGuardAnalysis,
-} from '../content/sw_guard.js';
+import '../content/sw_guard.js';
+const { checkRegisterOnCredentialPage, checkFetchHandlerInSwScript, checkPushSubscribeWithCredContext, checkCacheApiStoresCredentialPage, checkBackgroundSyncRegistration, calculateSwRiskScore, injectSwWarningBanner, isKnownFramework, runSwGuardAnalysis } = globalThis.__phishopsExports['sw_guard'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

@@ -6,15 +6,8 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkInstallPromptOnCredentialPage,
-  checkManifestBrandMismatch,
-  checkStandaloneDisplayWithCreds,
-  checkManifestSuspiciousScope,
-  checkInstallBannerLureText,
-  calculatePwaRiskScore,
-  injectPwaWarningBanner,
-} from '../content/pwa_guard.js';
+import '../content/pwa_guard.js';
+const { checkInstallPromptOnCredentialPage, checkManifestBrandMismatch, checkStandaloneDisplayWithCreds, checkManifestSuspiciousScope, checkInstallBannerLureText, calculatePwaRiskScore, injectPwaWarningBanner } = globalThis.__phishopsExports['pwa_guard'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

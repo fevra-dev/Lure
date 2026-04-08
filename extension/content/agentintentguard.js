@@ -27,7 +27,7 @@
 // AgentReasoningMonitor — inline (no external module dependency)
 // ---------------------------------------------------------------------------
 
-export class AgentReasoningMonitor {
+class AgentReasoningMonitor {
   constructor() {
     this._suspicious = false;
     this._watchTimeout = null;
@@ -177,4 +177,18 @@ if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.run
   const monitor = new AgentReasoningMonitor();
   console.debug('[AGENTINTENTGUARD] content script active url=%s',
     window.location.href.substring(0, 80));
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['agentintentguard'] = {
+    AgentReasoningMonitor,
+  };
 }

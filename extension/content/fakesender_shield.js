@@ -168,7 +168,7 @@ const FREE_TIER_INDICATORS = [
  * @param {string} hostname
  * @returns {{ platformKey: string, platform: Object, subdomain: string } | null}
  */
-export function isHelpdeskPlatform(hostname) {
+function isHelpdeskPlatform(hostname) {
   if (!hostname) return null;
 
   for (const [key, platform] of Object.entries(HELPDESK_PLATFORMS)) {
@@ -189,7 +189,7 @@ export function isHelpdeskPlatform(hostname) {
  * Detect helpdesk subdomain containing a known brand name that doesn't
  * belong to the brand (e.g., coinbase-help.zendesk.com).
  */
-export function checkHelpdeskBrandSubdomainMismatch(doc, hostname) {
+function checkHelpdeskBrandSubdomainMismatch(doc, hostname) {
   if (!doc || !hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -223,7 +223,7 @@ export function checkHelpdeskBrandSubdomainMismatch(doc, hostname) {
 /**
  * Detect credential input fields on a helpdesk page (unusual for support pages).
  */
-export function checkCredentialOnHelpdesk(doc, hostname) {
+function checkCredentialOnHelpdesk(doc, hostname) {
   if (!doc || !hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -249,7 +249,7 @@ export function checkCredentialOnHelpdesk(doc, hostname) {
 /**
  * Detect links to external domains that are NOT the claimed brand's legitimate domains.
  */
-export function checkExternalPhishingLinks(doc, hostname) {
+function checkExternalPhishingLinks(doc, hostname) {
   if (!doc || !hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -311,7 +311,7 @@ export function checkExternalPhishingLinks(doc, hostname) {
 /**
  * Detect heavy brand references in page text on a helpdesk domain.
  */
-export function checkBrandImpersonationText(doc, hostname) {
+function checkBrandImpersonationText(doc, hostname) {
   if (!doc || !hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -349,7 +349,7 @@ export function checkBrandImpersonationText(doc, hostname) {
 /**
  * Detect free-tier helpdesk indicators (platform branding watermarks).
  */
-export function checkFreeTierIndicator(doc, hostname) {
+function checkFreeTierIndicator(doc, hostname) {
   if (!doc || !hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -374,7 +374,7 @@ export function checkFreeTierIndicator(doc, hostname) {
 /**
  * Detect urgency language commonly used in phishing.
  */
-export function checkUrgentActionLanguage(doc) {
+function checkUrgentActionLanguage(doc) {
   if (!doc) return [];
 
   const signals = [];
@@ -404,7 +404,7 @@ export function checkUrgentActionLanguage(doc) {
  * @param {Array<{id: string, weight: number}>} signals
  * @returns {{ riskScore: number, signalList: string[] }}
  */
-export function calculateFakeSenderRiskScore(signals) {
+function calculateFakeSenderRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -420,7 +420,7 @@ export function calculateFakeSenderRiskScore(signals) {
 /**
  * Inject a warning banner for helpdesk brand impersonation.
  */
-export function injectFakeSenderWarningBanner(riskScore, matchedBrand, platform, signals) {
+function injectFakeSenderWarningBanner(riskScore, matchedBrand, platform, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-fakesender-banner')) return;
 
@@ -463,7 +463,7 @@ export function injectFakeSenderWarningBanner(riskScore, matchedBrand, platform,
 /**
  * Run full FakeSender Shield analysis on the current page.
  */
-export function runFakeSenderAnalysis() {
+function runFakeSenderAnalysis() {
   if (typeof document === 'undefined') return;
 
   const hostname = globalThis.location?.hostname || '';
@@ -526,4 +526,27 @@ export function runFakeSenderAnalysis() {
 
 if (typeof document !== 'undefined' && typeof process === 'undefined') {
   runFakeSenderAnalysis();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['fakesender_shield'] = {
+    isHelpdeskPlatform,
+    checkHelpdeskBrandSubdomainMismatch,
+    checkCredentialOnHelpdesk,
+    checkExternalPhishingLinks,
+    checkBrandImpersonationText,
+    checkFreeTierIndicator,
+    checkUrgentActionLanguage,
+    calculateFakeSenderRiskScore,
+    injectFakeSenderWarningBanner,
+    runFakeSenderAnalysis,
+  };
 }

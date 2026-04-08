@@ -67,7 +67,7 @@ const LOGIN_TEXT_PATTERNS = [
 /**
  * Check if page loads noVNC library files or contains noVNC-specific globals.
  */
-export function checkNoVncLibraryDetected(doc) {
+function checkNoVncLibraryDetected(doc) {
   if (!doc) return [];
 
   // Check script src attributes
@@ -116,7 +116,7 @@ export function checkNoVncLibraryDetected(doc) {
  * EvilnoVNC renders the remote session on a canvas with keyboard/mouse listeners,
  * with zero standard input elements.
  */
-export function checkCanvasPrimaryInteraction(doc) {
+function checkCanvasPrimaryInteraction(doc) {
   if (!doc || !doc.body) return [];
 
   const canvases = doc.querySelectorAll('canvas');
@@ -152,7 +152,7 @@ export function checkCanvasPrimaryInteraction(doc) {
  * Check for WebSocket connections to non-standard ports in page scripts.
  * VNC typically uses ports 5900-5905 or 6080-6090 for WebSocket relay.
  */
-export function checkWebSocketToNonStandardPort(doc) {
+function checkWebSocketToNonStandardPort(doc) {
   if (!doc) return [];
 
   const scripts = doc.querySelectorAll('script');
@@ -180,7 +180,7 @@ export function checkWebSocketToNonStandardPort(doc) {
 /**
  * Check for RFB protocol indicators in page DOM or script content.
  */
-export function checkRfbProtocolIndicators(doc) {
+function checkRfbProtocolIndicators(doc) {
   if (!doc) return [];
 
   // Check inline scripts
@@ -219,7 +219,7 @@ export function checkRfbProtocolIndicators(doc) {
  * Check if page has login context (text about signing in) but zero form elements.
  * VNC pages display a real login page visually but have no local form elements.
  */
-export function checkLoginContextWithoutForms(doc) {
+function checkLoginContextWithoutForms(doc) {
   if (!doc || !doc.body) return [];
 
   const forms = doc.querySelectorAll('form');
@@ -251,7 +251,7 @@ export function checkLoginContextWithoutForms(doc) {
  * @param {Array<{id: string, weight: number}>} signals
  * @returns {{ riskScore: number, signalList: string[] }}
  */
-export function calculateVncRiskScore(signals) {
+function calculateVncRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -267,7 +267,7 @@ export function calculateVncRiskScore(signals) {
 /**
  * Inject a warning banner into the page.
  */
-export function injectVncWarningBanner(riskScore, signals) {
+function injectVncWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-vnc-banner')) return;
 
@@ -308,7 +308,7 @@ export function injectVncWarningBanner(riskScore, signals) {
 /**
  * Run full VNCGuard analysis on the current page.
  */
-export function runVncGuardAnalysis() {
+function runVncGuardAnalysis() {
   if (typeof document === 'undefined') return;
 
   const hostname = globalThis.location?.hostname || '';
@@ -362,4 +362,25 @@ export function runVncGuardAnalysis() {
 
 if (typeof document !== 'undefined' && typeof process === 'undefined') {
   runVncGuardAnalysis();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['vnc_guard'] = {
+    checkNoVncLibraryDetected,
+    checkCanvasPrimaryInteraction,
+    checkWebSocketToNonStandardPort,
+    checkRfbProtocolIndicators,
+    checkLoginContextWithoutForms,
+    calculateVncRiskScore,
+    injectVncWarningBanner,
+    runVncGuardAnalysis,
+  };
 }

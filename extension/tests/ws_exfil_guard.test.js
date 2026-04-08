@@ -6,17 +6,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkWsOpenOnCredentialPage,
-  checkKeystrokeRelayPattern,
-  checkCrossOriginWsWithCreds,
-  checkFormValueInWsPayload,
-  checkWsWithoutVisibleWsUi,
-  calculateWsExfilRiskScore,
-  injectWsExfilWarningBanner,
-  parseWsHostname,
-  runWsExfilAnalysis,
-} from '../content/ws_exfil_guard.js';
+import '../content/ws_exfil_guard.js';
+const { checkWsOpenOnCredentialPage, checkKeystrokeRelayPattern, checkCrossOriginWsWithCreds, checkFormValueInWsPayload, checkWsWithoutVisibleWsUi, calculateWsExfilRiskScore, injectWsExfilWarningBanner, parseWsHostname, runWsExfilAnalysis } = globalThis.__phishopsExports['ws_exfil_guard'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

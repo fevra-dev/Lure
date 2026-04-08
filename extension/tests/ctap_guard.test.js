@@ -6,14 +6,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkSafariWindowsUaSpoof,
-  checkFidoAvailableButNotOffered,
-  checkCrossDeviceWebauthnNonProvider,
-  checkUaPlatformMismatch,
-  calculateCtapRiskScore,
-  injectCtapWarningBanner,
-} from '../content/ctap_guard.js';
+import '../content/ctap_guard.js';
+const { checkSafariWindowsUaSpoof, checkFidoAvailableButNotOffered, checkCrossDeviceWebauthnNonProvider, checkUaPlatformMismatch, calculateCtapRiskScore, injectCtapWarningBanner } = globalThis.__phishopsExports['ctap_guard'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

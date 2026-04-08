@@ -6,18 +6,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  hasLoginContext,
-  getCanvasElements,
-  checkIsolatedCanvasLoginContext,
-  checkFrameworkRendererDetected,
-  checkLowDomWithCanvas,
-  checkSuspiciousCanvasDimensions,
-  checkCanvasWithoutGameContext,
-  calculateCanvasPhishRiskScore,
-  injectCanvasPhishWarningBanner,
-  runCanvasPhishAnalysis,
-} from '../content/canvas_phish_guard.js';
+import '../content/canvas_phish_guard.js';
+const { hasLoginContext, getCanvasElements, checkIsolatedCanvasLoginContext, checkFrameworkRendererDetected, checkLowDomWithCanvas, checkSuspiciousCanvasDimensions, checkCanvasWithoutGameContext, calculateCanvasPhishRiskScore, injectCanvasPhishWarningBanner, runCanvasPhishAnalysis } = globalThis.__phishopsExports['canvas_phish_guard'];
 
 function makeDoc(html = '<html><head></head><body></body></html>', url = 'https://example.com') {
   const dom = new JSDOM(html, { url });

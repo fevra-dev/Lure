@@ -51,7 +51,7 @@ const ELEVATED_THRESHOLD_ORIGINS = [
 // Payload signal checks (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function checkPayloadSignals(text) {
+function checkPayloadSignals(text) {
   const signals = [];
   const lower = text.toLowerCase();
 
@@ -92,7 +92,7 @@ export function checkPayloadSignals(text) {
 // Page context signal checks (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function checkPageContextSignals() {
+function checkPageContextSignals() {
   const signals = [];
   const bodyText = (document.body?.innerText || document.body?.textContent || '').toLowerCase();
 
@@ -121,7 +121,7 @@ export function checkPageContextSignals() {
 // Risk score calculation (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function calculateClickFixRiskScore(signals) {
+function calculateClickFixRiskScore(signals) {
   let score = 0.0;
   const signalList = [];
 
@@ -140,7 +140,7 @@ export function calculateClickFixRiskScore(signals) {
 // Warning banner (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function injectClickFixWarningBanner(riskScore, payload, signals) {
+function injectClickFixWarningBanner(riskScore, payload, signals) {
   if (document.getElementById('phishops-clickfix-warning')) return;
 
   const snippet = (payload || '').substring(0, 120);
@@ -236,7 +236,7 @@ function trackUserGesture() {
 // Clipboard interceptor (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function installClipboardInterceptor() {
+function installClipboardInterceptor() {
   // Track user gestures
   document.addEventListener('click', trackUserGesture, true);
   document.addEventListener('keydown', trackUserGesture, true);
@@ -513,4 +513,22 @@ export function installClipboardInterceptor() {
 
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   installClipboardInterceptor();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['clickfix_clipboard_defender'] = {
+    checkPayloadSignals,
+    checkPageContextSignals,
+    calculateClickFixRiskScore,
+    injectClickFixWarningBanner,
+    installClipboardInterceptor,
+  };
 }

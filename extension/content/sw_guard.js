@@ -79,7 +79,7 @@ const cachedUrls = [];
 /**
  * Check if a Service Worker was registered on a page with credential fields.
  */
-export function checkRegisterOnCredentialPage(doc, registrations) {
+function checkRegisterOnCredentialPage(doc, registrations) {
   if (!doc || !registrations || registrations.length === 0) return [];
 
   // Skip if all registrations are known frameworks
@@ -101,7 +101,7 @@ export function checkRegisterOnCredentialPage(doc, registrations) {
  * Check if any registered SW script contains a fetch event handler,
  * indicating it can intercept and relay credential form submissions.
  */
-export function checkFetchHandlerInSwScript(registrations) {
+function checkFetchHandlerInSwScript(registrations) {
   if (!registrations) return [];
 
   for (const reg of registrations) {
@@ -127,7 +127,7 @@ export function checkFetchHandlerInSwScript(registrations) {
 /**
  * Check if PushManager.subscribe() was called alongside credential form context.
  */
-export function checkPushSubscribeWithCredContext(doc, didPushSubscribe) {
+function checkPushSubscribeWithCredContext(doc, didPushSubscribe) {
   if (!doc || !didPushSubscribe) return [];
 
   const credFields = doc.querySelectorAll(CREDENTIAL_SELECTORS);
@@ -142,7 +142,7 @@ export function checkPushSubscribeWithCredContext(doc, didPushSubscribe) {
 /**
  * Check if Cache API stored URLs matching the current credential page.
  */
-export function checkCacheApiStoresCredentialPage(cached, currentUrl, doc) {
+function checkCacheApiStoresCredentialPage(cached, currentUrl, doc) {
   if (!cached || cached.length === 0 || !currentUrl || !doc) return [];
 
   const credFields = doc.querySelectorAll(CREDENTIAL_SELECTORS);
@@ -169,7 +169,7 @@ export function checkCacheApiStoresCredentialPage(cached, currentUrl, doc) {
 /**
  * Check if BackgroundSync was registered (periodic C2 callback capability).
  */
-export function checkBackgroundSyncRegistration(didBackgroundSync) {
+function checkBackgroundSyncRegistration(didBackgroundSync) {
   if (!didBackgroundSync) return [];
 
   return [{
@@ -182,7 +182,7 @@ export function checkBackgroundSyncRegistration(didBackgroundSync) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculateSwRiskScore(signals) {
+function calculateSwRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -195,7 +195,7 @@ export function calculateSwRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectSwWarningBanner(riskScore, signals) {
+function injectSwWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-sw-banner')) return;
 
@@ -244,7 +244,7 @@ export function injectSwWarningBanner(riskScore, signals) {
 /**
  * Run full ServiceWorkerGuard analysis.
  */
-export function runSwGuardAnalysis(doc, registrations, didPushSubscribe, didBackgroundSync, cached, currentUrl) {
+function runSwGuardAnalysis(doc, registrations, didPushSubscribe, didBackgroundSync, cached, currentUrl) {
   if (!doc || !registrations || registrations.length === 0) return;
 
   const registerSignals = checkRegisterOnCredentialPage(doc, registrations);
@@ -297,7 +297,7 @@ export function runSwGuardAnalysis(doc, registrations, didPushSubscribe, didBack
 /**
  * Check if a SW script URL or source matches known legitimate frameworks.
  */
-export function isKnownFramework(scriptUrl, scriptSource) {
+function isKnownFramework(scriptUrl, scriptSource) {
   const combined = (scriptUrl || '') + ' ' + (scriptSource || '');
   const lower = combined.toLowerCase();
   return KNOWN_SW_FRAMEWORKS.some(fw => lower.includes(fw.toLowerCase()));
@@ -310,7 +310,7 @@ export function isKnownFramework(scriptUrl, scriptSource) {
 /**
  * Install ServiceWorker proxy at document_start.
  */
-export function installServiceWorkerProxy() {
+function installServiceWorkerProxy() {
   if (typeof navigator === 'undefined') return;
 
   // Wrap ServiceWorkerContainer.prototype.register
@@ -439,11 +439,11 @@ export function installServiceWorkerProxy() {
 /*  Exported state accessors (for testing)                             */
 /* ------------------------------------------------------------------ */
 
-export function _getSwRegistrations() {
+function _getSwRegistrations() {
   return swRegistrations;
 }
 
-export function _resetState() {
+function _resetState() {
   swRegistrations.length = 0;
   pushSubscribeCalled = false;
   backgroundSyncCalled = false;
@@ -456,4 +456,29 @@ export function _resetState() {
 
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   installServiceWorkerProxy();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['sw_guard'] = {
+    checkRegisterOnCredentialPage,
+    checkFetchHandlerInSwScript,
+    checkPushSubscribeWithCredContext,
+    checkCacheApiStoresCredentialPage,
+    checkBackgroundSyncRegistration,
+    calculateSwRiskScore,
+    injectSwWarningBanner,
+    runSwGuardAnalysis,
+    isKnownFramework,
+    installServiceWorkerProxy,
+    _getSwRegistrations,
+    _resetState,
+  };
 }

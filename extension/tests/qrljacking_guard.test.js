@@ -20,14 +20,8 @@ vi.stubGlobal('chrome', {
   },
 });
 
-import {
-  isQRLikeElement,
-  trackImageRefresh,
-  checkRefreshSignals,
-  checkQRPageContext,
-  calculateQRLjackingRiskScore,
-  injectQRLjackingWarningBanner,
-} from '../content/qrljacking_guard.js';
+import '../content/qrljacking_guard.js';
+const { isQRLikeElement, trackImageRefresh, checkRefreshSignals, checkQRPageContext, calculateQRLjackingRiskScore, injectQRLjackingWarningBanner } = globalThis.__phishopsExports['qrljacking_guard'];
 
 beforeEach(() => {
   document.body.innerHTML = '';

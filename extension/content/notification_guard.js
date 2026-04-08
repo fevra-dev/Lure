@@ -71,7 +71,7 @@ let pageLoadTimestamp = 0;
 /**
  * Check if Notification.requestPermission() was called without a recent user gesture.
  */
-export function checkPermissionRequestWithoutGesture(permCalls, gestures) {
+function checkPermissionRequestWithoutGesture(permCalls, gestures) {
   if (!permCalls || permCalls.length === 0) return [];
 
   for (const call of permCalls) {
@@ -94,7 +94,7 @@ export function checkPermissionRequestWithoutGesture(permCalls, gestures) {
 /**
  * Check if page contains fake CAPTCHA/verification lure text.
  */
-export function checkFakeVerificationLure(doc, permCalls) {
+function checkFakeVerificationLure(doc, permCalls) {
   if (!doc || !permCalls || permCalls.length === 0) return [];
 
   const bodyText = doc.body?.innerText || doc.body?.textContent || '';
@@ -115,7 +115,7 @@ export function checkFakeVerificationLure(doc, permCalls) {
 /**
  * Check if notification body/title contains urgency patterns.
  */
-export function checkNotificationUrgencyContent(notifs) {
+function checkNotificationUrgencyContent(notifs) {
   if (!notifs || notifs.length === 0) return [];
 
   for (const notif of notifs) {
@@ -136,7 +136,7 @@ export function checkNotificationUrgencyContent(notifs) {
 /**
  * Check if permission was requested within 3s of page load.
  */
-export function checkRapidPermissionOnLoad(permCalls, loadTimestamp) {
+function checkRapidPermissionOnLoad(permCalls, loadTimestamp) {
   if (!permCalls || permCalls.length === 0 || !loadTimestamp) return [];
 
   for (const call of permCalls) {
@@ -154,7 +154,7 @@ export function checkRapidPermissionOnLoad(permCalls, loadTimestamp) {
 /**
  * Check if notification data or body contains URL to a different origin.
  */
-export function checkCrossOriginNotificationLink(notifs, pageHostname) {
+function checkCrossOriginNotificationLink(notifs, pageHostname) {
   if (!notifs || notifs.length === 0 || !pageHostname) return [];
 
   for (const notif of notifs) {
@@ -182,7 +182,7 @@ export function checkCrossOriginNotificationLink(notifs, pageHostname) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculateNotifRiskScore(signals) {
+function calculateNotifRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -195,7 +195,7 @@ export function calculateNotifRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectNotifWarningBanner(riskScore, signals) {
+function injectNotifWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-notif-banner')) return;
 
@@ -244,7 +244,7 @@ export function injectNotifWarningBanner(riskScore, signals) {
 /**
  * Run full NotificationGuard analysis.
  */
-export function runNotificationGuardAnalysis(doc, permCalls, gestures, notifs, loadTimestamp, pageHostname) {
+function runNotificationGuardAnalysis(doc, permCalls, gestures, notifs, loadTimestamp, pageHostname) {
   if (!doc) return;
 
   const gestureSignals = checkPermissionRequestWithoutGesture(permCalls, gestures);
@@ -295,7 +295,7 @@ export function runNotificationGuardAnalysis(doc, permCalls, gestures, notifs, l
 /**
  * Install Notification proxy at document_start.
  */
-export function installNotificationProxy() {
+function installNotificationProxy() {
   if (typeof window === 'undefined') return;
 
   pageLoadTimestamp = Date.now();
@@ -400,23 +400,23 @@ export function installNotificationProxy() {
 /*  Exported state accessors (for testing)                             */
 /* ------------------------------------------------------------------ */
 
-export function _getPermissionCalls() {
+function _getPermissionCalls() {
   return permissionCalls;
 }
 
-export function _getGestureLog() {
+function _getGestureLog() {
   return gestureLog;
 }
 
-export function _getNotifications() {
+function _getNotifications() {
   return notifications;
 }
 
-export function _getPageLoadTimestamp() {
+function _getPageLoadTimestamp() {
   return pageLoadTimestamp;
 }
 
-export function _resetState() {
+function _resetState() {
   permissionCalls.length = 0;
   gestureLog.length = 0;
   notifications.length = 0;
@@ -429,4 +429,31 @@ export function _resetState() {
 
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   installNotificationProxy();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['notification_guard'] = {
+    checkPermissionRequestWithoutGesture,
+    checkFakeVerificationLure,
+    checkNotificationUrgencyContent,
+    checkRapidPermissionOnLoad,
+    checkCrossOriginNotificationLink,
+    calculateNotifRiskScore,
+    injectNotifWarningBanner,
+    runNotificationGuardAnalysis,
+    installNotificationProxy,
+    _getPermissionCalls,
+    _getGestureLog,
+    _getNotifications,
+    _getPageLoadTimestamp,
+    _resetState,
+  };
 }

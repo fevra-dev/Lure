@@ -202,7 +202,7 @@ if (typeof window !== 'undefined') {
  * if applicable.
  * Base weight: 0.30 — directory picker gives bulk recursive access.
  */
-export function checkDirectoryPickerInvoked(records) {
+function checkDirectoryPickerInvoked(records) {
   const dirPickers = (records || []).filter(r => r.type === 'directory');
   if (dirPickers.length === 0) return [];
 
@@ -229,7 +229,7 @@ export function checkDirectoryPickerInvoked(records) {
  * Weight: 0.15 — file picker grants single-file access; less severe than
  * directory picker but still anomalous on non-IDE phishing pages.
  */
-export function checkFilePickerInvoked(records) {
+function checkFilePickerInvoked(records) {
   const openPickers = (records || []).filter(r => r.type === 'open');
   if (openPickers.length === 0) return [];
 
@@ -251,7 +251,7 @@ export function checkFilePickerInvoked(records) {
  * Weight: 0.20 — save picker creates files on disk without Chrome download
  * history (FileJacking research, Print3M 2025). Used for DLL/EXE planting.
  */
-export function checkSavePickerInvoked(records) {
+function checkSavePickerInvoked(records) {
   const savePickers = (records || []).filter(r => r.type === 'save');
   if (savePickers.length === 0) return [];
 
@@ -266,7 +266,7 @@ export function checkSavePickerInvoked(records) {
  * Signal: Directory handle .entries() / .values() / .keys() was called.
  * Weight: 0.25 — recursive enumeration is the prerequisite for bulk exfil.
  */
-export function checkDirectoryEnumeration(records) {
+function checkDirectoryEnumeration(records) {
   if (!records || records.length === 0) return [];
 
   return [{
@@ -281,7 +281,7 @@ export function checkDirectoryEnumeration(records) {
  * Weight: 0.10 — confirms the page actually reads file content,
  * not just obtains a handle.
  */
-export function checkFileReadAttempts(records) {
+function checkFileReadAttempts(records) {
   if (!records || records.length === 0) return [];
 
   return [{
@@ -296,7 +296,7 @@ export function checkFileReadAttempts(records) {
  * Weight: 0.35 — reading files named 'credentials', '.env', 'id_rsa',
  * 'Login Data', etc. is a near-definitive indicator of credential theft.
  */
-export function checkCredentialFileTargeted(records) {
+function checkCredentialFileTargeted(records) {
   if (!records || records.length === 0) return [];
 
   const matched = records
@@ -317,7 +317,7 @@ export function checkCredentialFileTargeted(records) {
  * Weight: 0.20 — write access enables ransomware-style file modification
  * or planting of malicious files (cf. RøB, USENIX 2023).
  */
-export function checkWriteStreamOpened(records) {
+function checkWriteStreamOpened(records) {
   if (!records || records.length === 0) return [];
 
   return [{
@@ -333,7 +333,7 @@ export function checkWriteStreamOpened(records) {
  * followed by an outbound request is the complete credential exfiltration
  * sequence.
  */
-export function checkPostReadExfil(fileReads, networkReqs) {
+function checkPostReadExfil(fileReads, networkReqs) {
   if (!fileReads || fileReads.length === 0) return [];
   if (!networkReqs || networkReqs.length === 0) return [];
 
@@ -351,7 +351,7 @@ export function checkPostReadExfil(fileReads, networkReqs) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculateFsgRiskScore(signals) {
+function calculateFsgRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -364,7 +364,7 @@ export function calculateFsgRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectFsgWarningBanner(riskScore, signals, credFiles) {
+function injectFsgWarningBanner(riskScore, signals, credFiles) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-fsg-banner')) return;
 
@@ -416,7 +416,7 @@ export function injectFsgWarningBanner(riskScore, signals, credFiles) {
 /**
  * Run analysis on all accumulated File System Access API observations.
  */
-export function runFsgAnalysis(pickerRecs, enumRecs, fileRecs, writeRecs, netRecs) {
+function runFsgAnalysis(pickerRecs, enumRecs, fileRecs, writeRecs, netRecs) {
   const allSignals = [
     ...checkDirectoryPickerInvoked(pickerRecs),
     ...checkFilePickerInvoked(pickerRecs),
@@ -469,11 +469,11 @@ export function runFsgAnalysis(pickerRecs, enumRecs, fileRecs, writeRecs, netRec
 /*  Exported state accessors (for testing)                            */
 /* ------------------------------------------------------------------ */
 
-export function _getPickerRecords()   { return pickerRecords; }
-export function _getFileReadRecords() { return fileReadRecords; }
-export function _getNetworkRecords()  { return networkRecords; }
+function _getPickerRecords()   { return pickerRecords; }
+function _getFileReadRecords() { return fileReadRecords; }
+function _getNetworkRecords()  { return networkRecords; }
 
-export function _resetState() {
+function _resetState() {
   pickerRecords.length = 0;
   enumRecords.length = 0;
   fileReadRecords.length = 0;
@@ -503,4 +503,32 @@ if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.run
       trigger();
     }
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['filesystem_guard_bridge'] = {
+    checkDirectoryPickerInvoked,
+    checkFilePickerInvoked,
+    checkSavePickerInvoked,
+    checkDirectoryEnumeration,
+    checkFileReadAttempts,
+    checkCredentialFileTargeted,
+    checkWriteStreamOpened,
+    checkPostReadExfil,
+    calculateFsgRiskScore,
+    injectFsgWarningBanner,
+    runFsgAnalysis,
+    _getPickerRecords,
+    _getFileReadRecords,
+    _getNetworkRecords,
+    _resetState,
+  };
 }

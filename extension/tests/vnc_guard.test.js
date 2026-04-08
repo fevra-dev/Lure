@@ -6,15 +6,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkNoVncLibraryDetected,
-  checkCanvasPrimaryInteraction,
-  checkWebSocketToNonStandardPort,
-  checkRfbProtocolIndicators,
-  checkLoginContextWithoutForms,
-  calculateVncRiskScore,
-  injectVncWarningBanner,
-} from '../content/vnc_guard.js';
+import '../content/vnc_guard.js';
+const { checkNoVncLibraryDetected, checkCanvasPrimaryInteraction, checkWebSocketToNonStandardPort, checkRfbProtocolIndicators, checkLoginContextWithoutForms, calculateVncRiskScore, injectVncWarningBanner } = globalThis.__phishopsExports['vnc_guard'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

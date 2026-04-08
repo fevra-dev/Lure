@@ -8,7 +8,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { detectStateParameterAbuse } from '../content/state_parameter_abuse.js';
+import '../content/state_parameter_abuse.js';
+const { detectStateParameterAbuse } = globalThis.__phishopsExports['state_parameter_abuse'];
 
 // ---------------------------------------------------------------------------
 // Test fixtures

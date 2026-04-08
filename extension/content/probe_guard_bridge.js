@@ -85,7 +85,7 @@ if (typeof window !== 'undefined') {
  * Signal 1: toString probing on security-sensitive APIs.
  * Weight: 0.40 — strongest signal; deliberate extension fingerprinting.
  */
-export function checkToStringProbing(records) {
+function checkToStringProbing(records) {
   const entries = records['probe:tostring_on_security_api'];
   if (!entries || entries.length === 0) return null;
   return {
@@ -100,7 +100,7 @@ export function checkToStringProbing(records) {
  * Signal 2: iframe cross-frame function verification.
  * Weight: 0.30 — iframe-based native function comparison.
  */
-export function checkIframeVerification(records) {
+function checkIframeVerification(records) {
   const entries = records['probe:iframe_function_verification'];
   if (!entries || entries.length === 0) return null;
   return {
@@ -115,7 +115,7 @@ export function checkIframeVerification(records) {
  * Signal 3: timing loop microbenchmarking on APIs.
  * Weight: 0.25 — performance.now() high-frequency calls.
  */
-export function checkTimingLoop(records) {
+function checkTimingLoop(records) {
   const entries = records['probe:timing_loop_on_api'];
   if (!entries || entries.length === 0) return null;
   return {
@@ -130,7 +130,7 @@ export function checkTimingLoop(records) {
  * Signal 4: WAR-based extension probing.
  * Weight: 0.20 — chrome-extension:// or moz-extension:// URL access.
  */
-export function checkWarProbing(records) {
+function checkWarProbing(records) {
   const entries = records['probe:war_extension_probing'];
   if (!entries || entries.length === 0) return null;
   return {
@@ -145,7 +145,7 @@ export function checkWarProbing(records) {
  * Signal 5: prototype lie detection — CreepJS-style patterns.
  * Weight: 0.15 — getOwnPropertyDescriptor/Names on Function.prototype.
  */
-export function checkPrototypeLieDetection(records) {
+function checkPrototypeLieDetection(records) {
   const entries = records['probe:prototype_lie_detection'];
   if (!entries || entries.length === 0) return null;
   return {
@@ -165,7 +165,7 @@ export function checkPrototypeLieDetection(records) {
  * @param {object[]} signals - Array of signal objects from check functions.
  * @returns {number} Score capped at 1.0.
  */
-export function calculateProbeRiskScore(signals) {
+function calculateProbeRiskScore(signals) {
   if (!signals || signals.length === 0) return 0;
   const raw = signals.reduce((sum, s) => sum + (s.weight || 0), 0);
   return Math.min(raw, 1.0);
@@ -180,7 +180,7 @@ export function calculateProbeRiskScore(signals) {
  * @param {number} riskScore - The calculated risk score.
  * @param {object[]} signals - Active signals.
  */
-export function injectProbeWarningBanner(riskScore, signals) {
+function injectProbeWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-probe-warning')) return;
 
@@ -213,7 +213,7 @@ export function injectProbeWarningBanner(riskScore, signals) {
  * @param {object} records - The signalRecords state.
  * @returns {{ riskScore: number, signals: object[] }}
  */
-export function runProbeAnalysis(records) {
+function runProbeAnalysis(records) {
   const checks = [
     checkToStringProbing,
     checkIframeVerification,
@@ -280,10 +280,33 @@ if (typeof document !== 'undefined') {
 /*  Test-only accessors                                                 */
 /* ------------------------------------------------------------------ */
 
-export function _getSignalRecords() { return signalRecords; }
-export function _resetState() {
+function _getSignalRecords() { return signalRecords; }
+function _resetState() {
   for (const key of Object.keys(signalRecords)) {
     delete signalRecords[key];
   }
   analysisRun = false;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['probe_guard_bridge'] = {
+    checkToStringProbing,
+    checkIframeVerification,
+    checkTimingLoop,
+    checkWarProbing,
+    checkPrototypeLieDetection,
+    calculateProbeRiskScore,
+    injectProbeWarningBanner,
+    runProbeAnalysis,
+    _getSignalRecords,
+    _resetState,
+  };
 }

@@ -134,7 +134,7 @@ cd lur3
 ### Run Tests
 
 ```bash
-# Extension tests (Vitest) — 1439 tests across 40 suites
+# Extension tests (Vitest) — 1472 tests across 41 suites
 cd extension && npm test
 
 # Lure CLI tests (pytest)
@@ -173,7 +173,7 @@ lur3/
 │   ├── lib/                    # triage.js · intelligence_lifecycle.js · telemetry.js
 │   │                           # stealth_kit.js · threat_intel_sync.js
 │   ├── popup/                  # LURE canvas visualization dashboard
-│   └── tests/                  # 40 Vitest test files, 1439 tests
+│   └── tests/                  # 41 Vitest test files, 1472 tests
 │
 ├── lure/                       # Email analysis CLI
 │   ├── lure/modules/           # parser, extractor, scanner, scorer

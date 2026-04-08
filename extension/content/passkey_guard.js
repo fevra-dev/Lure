@@ -95,7 +95,7 @@ const createCallTimestamps = [];
 // Signal checks (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function checkCredentialRequestSignals(options, callType) {
+function checkCredentialRequestSignals(options, callType) {
   const signals = [];
 
   // Extract RP ID based on call type
@@ -179,7 +179,7 @@ export function checkCredentialRequestSignals(options, callType) {
   return signals;
 }
 
-export function checkPasskeyPageContext() {
+function checkPasskeyPageContext() {
   // Reserved for future page-level context signals
   return [];
 }
@@ -188,7 +188,7 @@ export function checkPasskeyPageContext() {
 // Risk score calculation (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function calculatePasskeyRiskScore(signals) {
+function calculatePasskeyRiskScore(signals) {
   let score = 0.0;
   const signalList = [];
 
@@ -207,7 +207,7 @@ export function calculatePasskeyRiskScore(signals) {
 // Warning banner (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function injectPasskeyWarningBanner(riskScore, rpId, signals) {
+function injectPasskeyWarningBanner(riskScore, rpId, signals) {
   if (document.getElementById('phishops-passkey-warning')) return;
 
   const banner = document.createElement('div');
@@ -267,7 +267,7 @@ function sendToBackground(payload) {
 // Credential interceptor (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function installCredentialInterceptor() {
+function installCredentialInterceptor() {
   // Track user gestures
   document.addEventListener('click', trackGesture, true);
   document.addEventListener('keydown', trackGesture, true);
@@ -373,4 +373,22 @@ export function installCredentialInterceptor() {
 
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   installCredentialInterceptor();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['passkey_guard'] = {
+    checkCredentialRequestSignals,
+    checkPasskeyPageContext,
+    calculatePasskeyRiskScore,
+    injectPasskeyWarningBanner,
+    installCredentialInterceptor,
+  };
 }

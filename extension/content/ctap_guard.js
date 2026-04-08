@@ -67,7 +67,7 @@ const PASSKEY_TEXT_PATTERNS = [
  * Safari never runs on Windows. Evilginx uses this to force FIDO downgrade.
  * Must NOT flag Chrome (which includes "Safari" in its UA string).
  */
-export function checkSafariWindowsUaSpoof() {
+function checkSafariWindowsUaSpoof() {
   const ua = globalThis.navigator?.userAgent || '';
   if (!ua) return [];
 
@@ -97,7 +97,7 @@ export function checkSafariWindowsUaSpoof() {
  * Check if page is a known FIDO provider login but no passkey UI is offered,
  * despite the browser supporting FIDO.
  */
-export function checkFidoAvailableButNotOffered(doc, hostname) {
+function checkFidoAvailableButNotOffered(doc, hostname) {
   if (!doc || !hostname) return [];
 
   // Must be a known FIDO provider
@@ -138,7 +138,7 @@ export function checkFidoAvailableButNotOffered(doc, hostname) {
  * Check for QR code + passkey text on a non-auth-provider domain.
  * Cross-device WebAuthn phishing.
  */
-export function checkCrossDeviceWebauthnNonProvider(doc, hostname) {
+function checkCrossDeviceWebauthnNonProvider(doc, hostname) {
   if (!doc || !hostname) return [];
 
   // Must NOT be a known auth provider
@@ -170,7 +170,7 @@ export function checkCrossDeviceWebauthnNonProvider(doc, hostname) {
 /**
  * Check if navigator.platform contradicts the User-Agent OS claim.
  */
-export function checkUaPlatformMismatch() {
+function checkUaPlatformMismatch() {
   const ua = globalThis.navigator?.userAgent || '';
   const platform = globalThis.navigator?.platform || '';
   if (!ua || !platform) return [];
@@ -220,7 +220,7 @@ export function checkUaPlatformMismatch() {
  * @param {Array<{id: string, weight: number}>} signals
  * @returns {{ riskScore: number, signalList: string[] }}
  */
-export function calculateCtapRiskScore(signals) {
+function calculateCtapRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -236,7 +236,7 @@ export function calculateCtapRiskScore(signals) {
 /**
  * Inject a warning banner into the page.
  */
-export function injectCtapWarningBanner(riskScore, signals) {
+function injectCtapWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-ctap-banner')) return;
 
@@ -277,7 +277,7 @@ export function injectCtapWarningBanner(riskScore, signals) {
 /**
  * Run full CTAPGuard analysis on the current page.
  */
-export function runCtapGuardAnalysis() {
+function runCtapGuardAnalysis() {
   if (typeof document === 'undefined') return;
 
   const hostname = globalThis.location?.hostname || '';
@@ -329,4 +329,24 @@ export function runCtapGuardAnalysis() {
 
 if (typeof document !== 'undefined' && typeof process === 'undefined') {
   runCtapGuardAnalysis();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['ctap_guard'] = {
+    checkSafariWindowsUaSpoof,
+    checkFidoAvailableButNotOffered,
+    checkCrossDeviceWebauthnNonProvider,
+    checkUaPlatformMismatch,
+    calculateCtapRiskScore,
+    injectCtapWarningBanner,
+    runCtapGuardAnalysis,
+  };
 }

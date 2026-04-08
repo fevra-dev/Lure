@@ -75,7 +75,7 @@ let analysisRun = false;
 /**
  * Check if fetch/XHR made POST to known blockchain RPC endpoint with eth_call.
  */
-export function checkRpcCallToBlockchainEndpoint(calls) {
+function checkRpcCallToBlockchainEndpoint(calls) {
   if (!calls || calls.length === 0) return [];
 
   for (const call of calls) {
@@ -99,7 +99,7 @@ export function checkRpcCallToBlockchainEndpoint(calls) {
 /**
  * Check if RPC response content was injected into the DOM.
  */
-export function checkEthCallResponseInjected(calls, injections) {
+function checkEthCallResponseInjected(calls, injections) {
   if (!calls || calls.length === 0 || !injections || injections.length === 0) return [];
 
   for (const call of calls) {
@@ -131,7 +131,7 @@ export function checkEthCallResponseInjected(calls, injections) {
 /**
  * Check for contract address (0x + 40 hex) in inline script alongside RPC method strings.
  */
-export function checkContractAddressInInlineScript(doc) {
+function checkContractAddressInInlineScript(doc) {
   if (!doc) return [];
 
   const scripts = doc.querySelectorAll('script');
@@ -157,7 +157,7 @@ export function checkContractAddressInInlineScript(doc) {
 /**
  * Check if web3/ethers library loaded on page with no DApp UI indicators.
  */
-export function checkWeb3LibraryOnNonDapp(doc) {
+function checkWeb3LibraryOnNonDapp(doc) {
   if (!doc) return [];
 
   const scripts = doc.querySelectorAll('script[src]');
@@ -190,7 +190,7 @@ export function checkWeb3LibraryOnNonDapp(doc) {
 /**
  * Check if dynamic script content matches RPC response data.
  */
-export function checkDynamicScriptFromRpcResponse(calls, dynScripts) {
+function checkDynamicScriptFromRpcResponse(calls, dynScripts) {
   if (!calls || calls.length === 0 || !dynScripts || dynScripts.length === 0) return [];
 
   for (const call of calls) {
@@ -224,7 +224,7 @@ export function checkDynamicScriptFromRpcResponse(calls, dynScripts) {
  * Decode ABI-encoded hex response from eth_call.
  * Strip first 128 hex chars (offset 64 + length 64), hex-decode remainder.
  */
-export function decodeAbiResponse(hexResult) {
+function decodeAbiResponse(hexResult) {
   if (!hexResult || typeof hexResult !== 'string') return '';
 
   // Strip 0x prefix if present
@@ -255,7 +255,7 @@ export function decodeAbiResponse(hexResult) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculateEtherHidingRiskScore(signals) {
+function calculateEtherHidingRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -268,7 +268,7 @@ export function calculateEtherHidingRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectEtherHidingWarningBanner(riskScore, signals) {
+function injectEtherHidingWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-etherhiding-banner')) return;
 
@@ -317,7 +317,7 @@ export function injectEtherHidingWarningBanner(riskScore, signals) {
 /**
  * Run full EtherHidingGuard analysis.
  */
-export function runEtherHidingAnalysis(doc, calls, injections, dynScripts) {
+function runEtherHidingAnalysis(doc, calls, injections, dynScripts) {
   if (!doc) return;
 
   const rpcSignals = checkRpcCallToBlockchainEndpoint(calls);
@@ -368,7 +368,7 @@ export function runEtherHidingAnalysis(doc, calls, injections, dynScripts) {
 /**
  * Parse hostname from a URL string.
  */
-export function parseHostname(url) {
+function parseHostname(url) {
   try {
     return new URL(url).hostname;
   } catch {
@@ -392,7 +392,7 @@ function extractRpcMethod(bodyText) {
 /**
  * Install fetch and XHR proxies at document_start.
  */
-export function installEtherHidingProxy() {
+function installEtherHidingProxy() {
   if (typeof window === 'undefined') return;
 
   // --- Wrap fetch ---
@@ -554,19 +554,19 @@ export function installEtherHidingProxy() {
 /*  Exported state accessors (for testing)                             */
 /* ------------------------------------------------------------------ */
 
-export function _getRpcCalls() {
+function _getRpcCalls() {
   return rpcCalls;
 }
 
-export function _getInjectionEvents() {
+function _getInjectionEvents() {
   return injectionEvents;
 }
 
-export function _getDynamicScripts() {
+function _getDynamicScripts() {
   return dynamicScripts;
 }
 
-export function _resetState() {
+function _resetState() {
   rpcCalls.length = 0;
   injectionEvents.length = 0;
   dynamicScripts.length = 0;
@@ -579,4 +579,32 @@ export function _resetState() {
 
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   installEtherHidingProxy();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['etherhiding_guard'] = {
+    checkRpcCallToBlockchainEndpoint,
+    checkEthCallResponseInjected,
+    checkContractAddressInInlineScript,
+    checkWeb3LibraryOnNonDapp,
+    checkDynamicScriptFromRpcResponse,
+    decodeAbiResponse,
+    calculateEtherHidingRiskScore,
+    injectEtherHidingWarningBanner,
+    runEtherHidingAnalysis,
+    parseHostname,
+    installEtherHidingProxy,
+    _getRpcCalls,
+    _getInjectionEvents,
+    _getDynamicScripts,
+    _resetState,
+  };
 }

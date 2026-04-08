@@ -6,17 +6,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  isHelpdeskPlatform,
-  checkHelpdeskBrandSubdomainMismatch,
-  checkCredentialOnHelpdesk,
-  checkExternalPhishingLinks,
-  checkBrandImpersonationText,
-  checkFreeTierIndicator,
-  checkUrgentActionLanguage,
-  calculateFakeSenderRiskScore,
-  injectFakeSenderWarningBanner,
-} from '../content/fakesender_shield.js';
+import '../content/fakesender_shield.js';
+const { isHelpdeskPlatform, checkHelpdeskBrandSubdomainMismatch, checkCredentialOnHelpdesk, checkExternalPhishingLinks, checkBrandImpersonationText, checkFreeTierIndicator, checkUrgentActionLanguage, calculateFakeSenderRiskScore, injectFakeSenderWarningBanner } = globalThis.__phishopsExports['fakesender_shield'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

@@ -68,13 +68,8 @@ if (typeof globalThis.ClipboardEvent === 'undefined') {
   };
 }
 
-import {
-  checkPayloadSignals,
-  checkPageContextSignals,
-  calculateClickFixRiskScore,
-  injectClickFixWarningBanner,
-  installClipboardInterceptor,
-} from '../content/clickfix_clipboard_defender.js';
+import '../content/clickfix_clipboard_defender.js';
+const { checkPayloadSignals, checkPageContextSignals, calculateClickFixRiskScore, injectClickFixWarningBanner, installClipboardInterceptor } = globalThis.__phishopsExports['clickfix_clipboard_defender'];
 
 beforeEach(() => {
   document.body.innerHTML = '';

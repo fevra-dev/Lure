@@ -6,16 +6,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkUniformSentenceLength,
-  checkUrgencyPhraseDensity,
-  checkLowTypoRateWithCredForm,
-  checkSlopPhraseDensity,
-  checkRepetitiveDomStructure,
-  checkAiMetaArtifacts,
-  calculateLlmRiskScore,
-  injectLlmWarningBanner,
-} from '../content/llm_scorer.js';
+import '../content/llm_scorer.js';
+const { checkUniformSentenceLength, checkUrgencyPhraseDensity, checkLowTypoRateWithCredForm, checkSlopPhraseDensity, checkRepetitiveDomStructure, checkAiMetaArtifacts, calculateLlmRiskScore, injectLlmWarningBanner } = globalThis.__phishopsExports['llm_scorer'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

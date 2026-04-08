@@ -68,7 +68,7 @@ const refreshTracking = new WeakMap();
 // Signal checks (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function isQRLikeElement(element) {
+function isQRLikeElement(element) {
   if (!element) return false;
   const tag = element.tagName;
   if (tag !== 'IMG' && tag !== 'CANVAS') return false;
@@ -95,7 +95,7 @@ export function isQRLikeElement(element) {
   return true;
 }
 
-export function trackImageRefresh(element) {
+function trackImageRefresh(element) {
   const now = Date.now();
   let data = refreshTracking.get(element);
 
@@ -120,7 +120,7 @@ export function trackImageRefresh(element) {
   };
 }
 
-export function checkRefreshSignals(element, refreshData) {
+function checkRefreshSignals(element, refreshData) {
   const signals = [];
 
   // Signal 1: Rapid image refresh
@@ -156,7 +156,7 @@ export function checkRefreshSignals(element, refreshData) {
   return signals;
 }
 
-export function checkQRPageContext() {
+function checkQRPageContext() {
   const signals = [];
   const bodyText = (document.body?.innerText || document.body?.textContent || '').toLowerCase();
   const pageHtml = document.documentElement?.innerHTML || '';
@@ -197,7 +197,7 @@ export function checkQRPageContext() {
 // Risk score calculation (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function calculateQRLjackingRiskScore(signals) {
+function calculateQRLjackingRiskScore(signals) {
   let score = 0.0;
   const signalList = [];
 
@@ -216,7 +216,7 @@ export function calculateQRLjackingRiskScore(signals) {
 // Warning banner (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function injectQRLjackingWarningBanner(riskScore, element, signals) {
+function injectQRLjackingWarningBanner(riskScore, element, signals) {
   if (document.getElementById('phishops-qrljacking-warning')) return;
 
   const banner = document.createElement('div');
@@ -363,7 +363,7 @@ function handleSuspiciousRefresh(element, refreshData) {
 // Main runner (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function runQRLjackingGuard() {
+function runQRLjackingGuard() {
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       // Watch for src attribute changes on existing img/canvas elements
@@ -419,4 +419,24 @@ if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.run
   } else {
     runQRLjackingGuard();
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['qrljacking_guard'] = {
+    isQRLikeElement,
+    trackImageRefresh,
+    checkRefreshSignals,
+    checkQRPageContext,
+    calculateQRLjackingRiskScore,
+    injectQRLjackingWarningBanner,
+    runQRLjackingGuard,
+  };
 }

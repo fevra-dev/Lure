@@ -113,7 +113,7 @@ if (typeof window !== 'undefined') {
 /**
  * Check if the page has login/auth context via URL, title, or body text.
  */
-export function hasLoginContext(doc) {
+function hasLoginContext(doc) {
   if (!doc) return false;
 
   const url = (doc.location?.href || '').toLowerCase();
@@ -134,7 +134,7 @@ export function hasLoginContext(doc) {
 /**
  * Check if any game engine markers exist in the page scripts.
  */
-export function hasGameEngineMarkers(doc) {
+function hasGameEngineMarkers(doc) {
   if (!doc) return false;
 
   const scripts = doc.querySelectorAll('script');
@@ -157,7 +157,7 @@ export function hasGameEngineMarkers(doc) {
  * Signal 1: Keyboard event listener attached to a canvas element.
  * Weight: 0.40 — strongest single signal of canvas credential capture.
  */
-export function checkKeyboardListenerOnCanvas(records) {
+function checkKeyboardListenerOnCanvas(records) {
   if (!records || records.length === 0) return [];
 
   const hasKeyboardListener = records.some(r =>
@@ -178,7 +178,7 @@ export function checkKeyboardListenerOnCanvas(records) {
  * Signal 2: Canvas uses 2D context on a page with login context keywords.
  * Weight: 0.30 — Canvas 2D is the most realistic phishing rendering path.
  */
-export function checkCanvas2dContextOnLoginPage(contexts, doc) {
+function checkCanvas2dContextOnLoginPage(contexts, doc) {
   if (!contexts || contexts.length === 0 || !doc) return [];
 
   const has2d = contexts.some(c => c.contextType === '2d');
@@ -196,7 +196,7 @@ export function checkCanvas2dContextOnLoginPage(contexts, doc) {
  * Signal 3: Multiple keyboard event types on the same canvas.
  * Weight: 0.25 — credential accumulation typically requires both keydown+keyup.
  */
-export function checkMultipleKeyboardEventTypes(records) {
+function checkMultipleKeyboardEventTypes(records) {
   if (!records || records.length === 0) return [];
 
   // Group event types per canvas
@@ -225,7 +225,7 @@ export function checkMultipleKeyboardEventTypes(records) {
  * Weight: 0.20 — no legitimate reason for canvas keyboard input without DOM inputs
  *                 unless the form is rendered entirely on canvas.
  */
-export function checkCanvasKeyboardNoDomInputs(records, doc) {
+function checkCanvasKeyboardNoDomInputs(records, doc) {
   if (!records || records.length === 0 || !doc) return [];
 
   const credFields = doc.querySelectorAll(CREDENTIAL_SELECTORS);
@@ -241,7 +241,7 @@ export function checkCanvasKeyboardNoDomInputs(records, doc) {
  * Signal 5: Canvas has keyboard listeners with no game engine markers.
  * Weight: 0.15 — game engines legitimately use canvas + keyboard input.
  */
-export function checkNoGameEngineWithCanvasKeys(records, doc) {
+function checkNoGameEngineWithCanvasKeys(records, doc) {
   if (!records || records.length === 0 || !doc) return [];
 
   if (hasGameEngineMarkers(doc)) return [];
@@ -256,7 +256,7 @@ export function checkNoGameEngineWithCanvasKeys(records, doc) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculateCkgRiskScore(signals) {
+function calculateCkgRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -269,7 +269,7 @@ export function calculateCkgRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectCkgWarningBanner(riskScore, signals) {
+function injectCkgWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-ckg-banner')) return;
 
@@ -318,7 +318,7 @@ export function injectCkgWarningBanner(riskScore, signals) {
 /**
  * Run analysis on accumulated keyboard and context observations.
  */
-export function runCkgAnalysis(doc, kbRecords, ctxRecords) {
+function runCkgAnalysis(doc, kbRecords, ctxRecords) {
   if (!doc || !kbRecords || kbRecords.length === 0) return;
 
   const keyboardSignals = checkKeyboardListenerOnCanvas(kbRecords);
@@ -367,15 +367,15 @@ export function runCkgAnalysis(doc, kbRecords, ctxRecords) {
 /*  Exported state accessors (for testing)                             */
 /* ------------------------------------------------------------------ */
 
-export function _getKeyboardRecords() {
+function _getKeyboardRecords() {
   return keyboardRecords;
 }
 
-export function _getContextRecords() {
+function _getContextRecords() {
   return contextRecords;
 }
 
-export function _resetState() {
+function _resetState() {
   keyboardRecords.length = 0;
   contextRecords.length = 0;
   analysisRun = false;
@@ -396,4 +396,30 @@ if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.run
       }, 2000);
     });
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['canvas_keystroke_guard_bridge'] = {
+    hasLoginContext,
+    hasGameEngineMarkers,
+    checkKeyboardListenerOnCanvas,
+    checkCanvas2dContextOnLoginPage,
+    checkMultipleKeyboardEventTypes,
+    checkCanvasKeyboardNoDomInputs,
+    checkNoGameEngineWithCanvasKeys,
+    calculateCkgRiskScore,
+    injectCkgWarningBanner,
+    runCkgAnalysis,
+    _getKeyboardRecords,
+    _getContextRecords,
+    _resetState,
+  };
 }

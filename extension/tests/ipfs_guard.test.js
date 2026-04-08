@@ -6,15 +6,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkGatewayHostedPage,
-  checkCredentialOnGateway,
-  checkCidInUrl,
-  checkExternalIpfsLinks,
-  checkSuspiciousIpfsContent,
-  calculateIpfsRiskScore,
-  injectIpfsWarningBanner,
-} from '../content/ipfs_guard.js';
+import '../content/ipfs_guard.js';
+const { checkGatewayHostedPage, checkCredentialOnGateway, checkCidInUrl, checkExternalIpfsLinks, checkSuspiciousIpfsContent, calculateIpfsRiskScore, injectIpfsWarningBanner } = globalThis.__phishopsExports['ipfs_guard'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

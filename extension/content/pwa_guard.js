@@ -95,7 +95,7 @@ function matchesBrandDomain(hostname, brand) {
  * Check if page has credential fields and a web app manifest
  * (indicator of PWA install prompt on a credential harvesting page).
  */
-export function checkInstallPromptOnCredentialPage(doc) {
+function checkInstallPromptOnCredentialPage(doc) {
   if (!doc) return [];
   if (!hasCredentialFields(doc)) return [];
 
@@ -113,7 +113,7 @@ export function checkInstallPromptOnCredentialPage(doc) {
  * Check if Web App Manifest name/meta tags reference a known brand
  * but the hosting domain doesn't match that brand.
  */
-export function checkManifestBrandMismatch(doc, hostname) {
+function checkManifestBrandMismatch(doc, hostname) {
   if (!doc || !hostname) return [];
 
   const manifest = getManifestData(doc);
@@ -148,7 +148,7 @@ export function checkManifestBrandMismatch(doc, hostname) {
  * Check if page is running in standalone display mode with credential fields.
  * Standalone mode means no URL bar — the user can't verify the domain.
  */
-export function checkStandaloneDisplayWithCreds(doc) {
+function checkStandaloneDisplayWithCreds(doc) {
   if (!doc) return [];
   if (!hasCredentialFields(doc)) return [];
 
@@ -183,7 +183,7 @@ export function checkStandaloneDisplayWithCreds(doc) {
 /**
  * Check if manifest references a broad scope with a brand name in app metadata.
  */
-export function checkManifestSuspiciousScope(doc, hostname) {
+function checkManifestSuspiciousScope(doc, hostname) {
   if (!doc || !hostname) return [];
 
   const manifest = getManifestData(doc);
@@ -214,7 +214,7 @@ export function checkManifestSuspiciousScope(doc, hostname) {
 /**
  * Check for install instruction lure text near credential fields.
  */
-export function checkInstallBannerLureText(doc) {
+function checkInstallBannerLureText(doc) {
   if (!doc || !doc.body) return [];
   if (!hasCredentialFields(doc)) return [];
 
@@ -237,7 +237,7 @@ export function checkInstallBannerLureText(doc) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculatePwaRiskScore(signals) {
+function calculatePwaRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -250,7 +250,7 @@ export function calculatePwaRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectPwaWarningBanner(riskScore, signals) {
+function injectPwaWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-pwa-banner')) return;
 
@@ -289,7 +289,7 @@ export function injectPwaWarningBanner(riskScore, signals) {
 /*  Main Analysis                                                      */
 /* ------------------------------------------------------------------ */
 
-export function runPwaGuardAnalysis() {
+function runPwaGuardAnalysis() {
   if (typeof document === 'undefined') return;
 
   const hostname = globalThis.location?.hostname || '';
@@ -344,4 +344,25 @@ export function runPwaGuardAnalysis() {
 
 if (typeof document !== 'undefined' && typeof process === 'undefined') {
   runPwaGuardAnalysis();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['pwa_guard'] = {
+    checkInstallPromptOnCredentialPage,
+    checkManifestBrandMismatch,
+    checkStandaloneDisplayWithCreds,
+    checkManifestSuspiciousScope,
+    checkInstallBannerLureText,
+    calculatePwaRiskScore,
+    injectPwaWarningBanner,
+    runPwaGuardAnalysis,
+  };
 }

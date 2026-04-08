@@ -69,7 +69,7 @@ let analysisRun = false;
 /**
  * Check if any WebSocket was opened on a page with credential fields.
  */
-export function checkWsOpenOnCredentialPage(doc, connections) {
+function checkWsOpenOnCredentialPage(doc, connections) {
   if (!doc || !connections || connections.length === 0) return [];
 
   const credFields = doc.querySelectorAll(CREDENTIAL_SELECTORS);
@@ -87,7 +87,7 @@ export function checkWsOpenOnCredentialPage(doc, connections) {
  * Analyse recorded WS.send() calls for high-frequency small payloads
  * characteristic of keystroke relay.
  */
-export function checkKeystrokeRelayPattern(connections) {
+function checkKeystrokeRelayPattern(connections) {
   if (!connections) return [];
 
   for (const conn of connections) {
@@ -133,7 +133,7 @@ export function checkKeystrokeRelayPattern(connections) {
  * Check if any WebSocket target hostname differs from the page origin
  * on a credential page.
  */
-export function checkCrossOriginWsWithCreds(connections, pageHostname, doc) {
+function checkCrossOriginWsWithCreds(connections, pageHostname, doc) {
   if (!connections || !pageHostname || !doc) return [];
 
   const credFields = doc.querySelectorAll(CREDENTIAL_SELECTORS);
@@ -157,7 +157,7 @@ export function checkCrossOriginWsWithCreds(connections, pageHostname, doc) {
  * Check if any WS.send() payload contains a substring matching current
  * input field values.
  */
-export function checkFormValueInWsPayload(connections, doc) {
+function checkFormValueInWsPayload(connections, doc) {
   if (!connections || !doc) return [];
 
   const inputs = doc.querySelectorAll(CREDENTIAL_SELECTORS);
@@ -197,7 +197,7 @@ export function checkFormValueInWsPayload(connections, doc) {
  * Check if page has WebSocket connections but no visible chat/collaboration UI,
  * suggesting no legitimate reason for WebSocket use.
  */
-export function checkWsWithoutVisibleWsUi(doc, connections) {
+function checkWsWithoutVisibleWsUi(doc, connections) {
   if (!doc || !connections || connections.length === 0) return [];
 
   const hasChatUi = CHAT_UI_SELECTORS.some(sel => {
@@ -218,7 +218,7 @@ export function checkWsWithoutVisibleWsUi(doc, connections) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculateWsExfilRiskScore(signals) {
+function calculateWsExfilRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -231,7 +231,7 @@ export function calculateWsExfilRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectWsExfilWarningBanner(riskScore, signals) {
+function injectWsExfilWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-wsexfil-banner')) return;
 
@@ -280,7 +280,7 @@ export function injectWsExfilWarningBanner(riskScore, signals) {
 /**
  * Parse hostname from a WebSocket URL.
  */
-export function parseWsHostname(url) {
+function parseWsHostname(url) {
   try {
     // ws:// and wss:// → http:// for URL parsing
     const httpUrl = url.replace(/^ws(s?):\/\//, 'http$1://');
@@ -294,7 +294,7 @@ export function parseWsHostname(url) {
  * Run analysis on accumulated WebSocket data.
  * Called periodically and on DOMContentLoaded.
  */
-export function runWsExfilAnalysis(doc, connections, pageHostname) {
+function runWsExfilAnalysis(doc, connections, pageHostname) {
   if (!doc || !connections || connections.length === 0) return;
 
   const openSignals = checkWsOpenOnCredentialPage(doc, connections);
@@ -344,7 +344,7 @@ export function runWsExfilAnalysis(doc, connections, pageHostname) {
  * Install WebSocket proxy at document_start.
  * Wraps the WebSocket constructor and send() to monitor for credential exfil.
  */
-export function installWebSocketProxy() {
+function installWebSocketProxy() {
   if (typeof window === 'undefined' || !window.WebSocket) return;
 
   const OriginalWebSocket = window.WebSocket;
@@ -425,11 +425,11 @@ export function installWebSocketProxy() {
 /*  Exported state accessors (for testing)                             */
 /* ------------------------------------------------------------------ */
 
-export function _getWsConnections() {
+function _getWsConnections() {
   return wsConnections;
 }
 
-export function _resetState() {
+function _resetState() {
   wsConnections.length = 0;
   analysisRun = false;
 }
@@ -440,4 +440,29 @@ export function _resetState() {
 
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   installWebSocketProxy();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['ws_exfil_guard'] = {
+    checkWsOpenOnCredentialPage,
+    checkKeystrokeRelayPattern,
+    checkCrossOriginWsWithCreds,
+    checkFormValueInWsPayload,
+    checkWsWithoutVisibleWsUi,
+    calculateWsExfilRiskScore,
+    injectWsExfilWarningBanner,
+    parseWsHostname,
+    runWsExfilAnalysis,
+    installWebSocketProxy,
+    _getWsConnections,
+    _resetState,
+  };
 }

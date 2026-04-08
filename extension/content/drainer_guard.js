@@ -70,7 +70,7 @@ const WALLET_CONNECT_PATTERNS = [
  * Check if page scripts call dangerous ethereum methods.
  * Scans inline script content for method name references.
  */
-export function checkDangerousEthMethodCall(doc) {
+function checkDangerousEthMethodCall(doc) {
   if (!doc) return [];
 
   const scripts = doc.querySelectorAll('script');
@@ -94,7 +94,7 @@ export function checkDangerousEthMethodCall(doc) {
  * Check for ERC-20 approve() with unlimited allowance (max uint256).
  * This is the signature of token approval drain attacks.
  */
-export function checkApproveUnlimitedAllowance(doc) {
+function checkApproveUnlimitedAllowance(doc) {
   if (!doc) return [];
 
   const scripts = doc.querySelectorAll('script');
@@ -123,7 +123,7 @@ export function checkApproveUnlimitedAllowance(doc) {
  * Check for multicall/batch function selectors in script content.
  * Drainers batch multiple asset transfers in a single transaction.
  */
-export function checkMulticallBatchTransaction(doc) {
+function checkMulticallBatchTransaction(doc) {
   if (!doc) return [];
 
   const scripts = doc.querySelectorAll('script');
@@ -146,7 +146,7 @@ export function checkMulticallBatchTransaction(doc) {
 /**
  * Check if scripts reference known drainer contract addresses.
  */
-export function checkKnownDrainerContract(doc) {
+function checkKnownDrainerContract(doc) {
   if (!doc) return [];
 
   const scripts = doc.querySelectorAll('script');
@@ -169,7 +169,7 @@ export function checkKnownDrainerContract(doc) {
 /**
  * Check for airdrop claim lure text near a wallet connect button/text.
  */
-export function checkAirdropClaimLure(doc) {
+function checkAirdropClaimLure(doc) {
   if (!doc || !doc.body) return [];
 
   const bodyText = doc.body?.innerText || doc.body?.textContent || '';
@@ -191,7 +191,7 @@ export function checkAirdropClaimLure(doc) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculateDrainerRiskScore(signals) {
+function calculateDrainerRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -204,7 +204,7 @@ export function calculateDrainerRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectDrainerWarningBanner(riskScore, signals) {
+function injectDrainerWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-drainer-banner')) return;
 
@@ -242,7 +242,7 @@ export function injectDrainerWarningBanner(riskScore, signals) {
 /*  Main Analysis                                                      */
 /* ------------------------------------------------------------------ */
 
-export function runDrainerGuardAnalysis() {
+function runDrainerGuardAnalysis() {
   if (typeof document === 'undefined') return;
 
   const hostname = globalThis.location?.hostname || '';
@@ -295,4 +295,25 @@ export function runDrainerGuardAnalysis() {
 
 if (typeof document !== 'undefined' && typeof process === 'undefined') {
   runDrainerGuardAnalysis();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['drainer_guard'] = {
+    checkDangerousEthMethodCall,
+    checkApproveUnlimitedAllowance,
+    checkMulticallBatchTransaction,
+    checkKnownDrainerContract,
+    checkAirdropClaimLure,
+    calculateDrainerRiskScore,
+    injectDrainerWarningBanner,
+    runDrainerGuardAnalysis,
+  };
 }

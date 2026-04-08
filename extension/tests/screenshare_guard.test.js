@@ -22,17 +22,8 @@ vi.stubGlobal('chrome', {
   },
 });
 
-import {
-  checkScreenShareSignals,
-  checkScreenSharePageContext,
-  calculateScreenShareRiskScore,
-  injectScreenShareWarningBanner,
-  installGetDisplayMediaInterceptor,
-  monitorCredentialFieldsDuringShare,
-  _setLastGestureTimestamp,
-  _isScreenShareActive,
-  _setScreenShareActive,
-} from '../content/screenshare_guard.js';
+import '../content/screenshare_guard.js';
+const { checkScreenShareSignals, checkScreenSharePageContext, calculateScreenShareRiskScore, injectScreenShareWarningBanner, installGetDisplayMediaInterceptor, monitorCredentialFieldsDuringShare, _setLastGestureTimestamp, _isScreenShareActive, _setScreenShareActive } = globalThis.__phishopsExports['screenshare_guard'];
 
 beforeEach(() => {
   document.body.innerHTML = '';

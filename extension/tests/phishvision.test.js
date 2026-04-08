@@ -7,17 +7,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkBrandKeywordSignals,
-  checkLoginFormSignals,
-  checkDomainSuspicion,
-  checkTextToHtmlRatio,
-  checkFaviconBrandMatch,
-  checkColorPaletteMatch,
-  checkLOTLTrustedDomain,
-  calculatePhishVisionRiskScore,
-  injectPhishVisionWarningBanner,
-} from '../content/phishvision.js';
+import '../content/phishvision.js';
+const { checkBrandKeywordSignals, checkLoginFormSignals, checkDomainSuspicion, checkTextToHtmlRatio, checkFaviconBrandMatch, checkColorPaletteMatch, checkLOTLTrustedDomain, calculatePhishVisionRiskScore, injectPhishVisionWarningBanner } = globalThis.__phishopsExports['phishvision'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

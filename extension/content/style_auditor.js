@@ -60,7 +60,7 @@ const CREDENTIAL_SELECTORS = [
  * Check if any stylesheet contains CSS attribute selectors targeting
  * input[value] combined with url() — CSS keylogging pattern.
  */
-export function checkCssExfilAttributeSelector(doc) {
+function checkCssExfilAttributeSelector(doc) {
   if (!doc) return [];
 
   // Check inline <style> elements
@@ -98,7 +98,7 @@ export function checkCssExfilAttributeSelector(doc) {
  * Check for iframes with CSS-hidden visibility that load auth provider domains.
  * Techniques: opacity:0, clip-path:inset(100%), off-screen position, height:0+overflow:hidden.
  */
-export function checkHiddenIframeCredentialLoad(doc) {
+function checkHiddenIframeCredentialLoad(doc) {
   if (!doc) return [];
 
   const iframes = doc.querySelectorAll('iframe');
@@ -149,7 +149,7 @@ export function checkHiddenIframeCredentialLoad(doc) {
  * Covers: opacity < 0.01, clip-path inset, off-screen positioning.
  * Does NOT flag display:none or type=hidden (AutofillGuard covers those).
  */
-export function checkInvisibleFormAutofillTrap(doc) {
+function checkInvisibleFormAutofillTrap(doc) {
   if (!doc) return [];
 
   for (const selector of CREDENTIAL_SELECTORS) {
@@ -183,7 +183,7 @@ export function checkInvisibleFormAutofillTrap(doc) {
  * Check for @import url() chains pointing to external domains.
  * CSS exfiltration staging technique.
  */
-export function checkCssImportExfilChain(doc, hostname) {
+function checkCssImportExfilChain(doc, hostname) {
   if (!doc || !hostname) return [];
 
   const styles = doc.querySelectorAll('style');
@@ -222,7 +222,7 @@ export function checkCssImportExfilChain(doc, hostname) {
  * Check for dynamically inserted <style> elements containing exfil patterns.
  * Returns initial signals from existing dynamic styles.
  */
-export function checkDynamicStyleInjection(doc) {
+function checkDynamicStyleInjection(doc) {
   if (!doc) return [];
 
   // Check for style elements that appear to be dynamically generated
@@ -247,7 +247,7 @@ export function checkDynamicStyleInjection(doc) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculateStyleRiskScore(signals) {
+function calculateStyleRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -260,7 +260,7 @@ export function calculateStyleRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectStyleWarningBanner(riskScore, signals) {
+function injectStyleWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-style-banner')) return;
 
@@ -298,7 +298,7 @@ export function injectStyleWarningBanner(riskScore, signals) {
 /*  Main Analysis                                                      */
 /* ------------------------------------------------------------------ */
 
-export function runStyleAuditorAnalysis() {
+function runStyleAuditorAnalysis() {
   if (typeof document === 'undefined') return;
 
   const hostname = globalThis.location?.hostname || '';
@@ -351,4 +351,25 @@ export function runStyleAuditorAnalysis() {
 
 if (typeof document !== 'undefined' && typeof process === 'undefined') {
   runStyleAuditorAnalysis();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['style_auditor'] = {
+    checkCssExfilAttributeSelector,
+    checkHiddenIframeCredentialLoad,
+    checkInvisibleFormAutofillTrap,
+    checkCssImportExfilChain,
+    checkDynamicStyleInjection,
+    calculateStyleRiskScore,
+    injectStyleWarningBanner,
+    runStyleAuditorAnalysis,
+  };
 }

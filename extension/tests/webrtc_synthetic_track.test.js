@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import {
-  computeSyntheticTrackRiskScore,
-  isSyntheticTrack,
-  isVideoConferencingDomain,
-} from '../content/webrtc_synthetic_track_main.js';
+import '../content/webrtc_synthetic_track_main.js';
+const { computeSyntheticTrackRiskScore, isSyntheticTrack, isVideoConferencingDomain } = globalThis.__phishopsExports['webrtc_synthetic_track_main'];
 
 describe('computeSyntheticTrackRiskScore', () => {
   it('returns 0 for empty signal set', () => {

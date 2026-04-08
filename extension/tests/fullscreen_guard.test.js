@@ -21,15 +21,8 @@ vi.stubGlobal('chrome', {
   },
 });
 
-import {
-  checkFullscreenGestureSignal,
-  checkFullscreenTargetSignals,
-  checkPostFullscreenMutations,
-  checkCredentialFieldVisibility,
-  calculateFullscreenRiskScore,
-  injectFullscreenWarningBanner,
-  runFullscreenGuard,
-} from '../content/fullscreen_guard.js';
+import '../content/fullscreen_guard.js';
+const { checkFullscreenGestureSignal, checkFullscreenTargetSignals, checkPostFullscreenMutations, checkCredentialFieldVisibility, calculateFullscreenRiskScore, injectFullscreenWarningBanner, runFullscreenGuard } = globalThis.__phishopsExports['fullscreen_guard'];
 
 // Helper to mock document.fullscreenElement
 function setFullscreenElement(el) {

@@ -25,17 +25,8 @@ vi.stubGlobal('chrome', {
   },
 });
 
-import {
-  getCredentialFields,
-  getFieldVisibilitySignals,
-  isLikelyFalsePositive,
-  checkClickjackingSignals,
-  calculateAutofillRiskScore,
-  disableHiddenCredentialFields,
-  restoreClickjackedPage,
-  injectAutofillWarningBanner,
-  runAudit,
-} from '../content/autofill_guard.js';
+import '../content/autofill_guard.js';
+const { getCredentialFields, getFieldVisibilitySignals, isLikelyFalsePositive, checkClickjackingSignals, calculateAutofillRiskScore, disableHiddenCredentialFields, restoreClickjackedPage, injectAutofillWarningBanner, runAudit } = globalThis.__phishopsExports['autofill_guard'];
 
 beforeEach(() => {
   document.body.innerHTML = '';

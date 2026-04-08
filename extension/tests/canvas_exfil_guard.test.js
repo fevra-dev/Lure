@@ -6,20 +6,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkPostWithCredentialFields,
-  checkCrossOriginPostFromCanvasPage,
-  checkBeaconFromCanvasPage,
-  checkSmallJsonPostPattern,
-  checkImagePixelExfilPattern,
-  calculateCxgRiskScore,
-  injectCxgWarningBanner,
-  isCanvasPageWithoutDomInputs,
-  hasLoginContext,
-  extractBodyKeys,
-  parseHostname,
-  runCxgAnalysis,
-} from '../content/canvas_exfil_guard.js';
+import '../content/canvas_exfil_guard.js';
+const { checkPostWithCredentialFields, checkCrossOriginPostFromCanvasPage, checkBeaconFromCanvasPage, checkSmallJsonPostPattern, checkImagePixelExfilPattern, calculateCxgRiskScore, injectCxgWarningBanner, isCanvasPageWithoutDomInputs, hasLoginContext, extractBodyKeys, parseHostname, runCxgAnalysis } = globalThis.__phishopsExports['canvas_exfil_guard'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

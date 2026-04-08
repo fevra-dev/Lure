@@ -7,19 +7,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
 
-import {
-  checkRpcCallToBlockchainEndpoint,
-  checkEthCallResponseInjected,
-  checkContractAddressInInlineScript,
-  checkWeb3LibraryOnNonDapp,
-  checkDynamicScriptFromRpcResponse,
-  decodeAbiResponse,
-  calculateEtherHidingRiskScore,
-  injectEtherHidingWarningBanner,
-  runEtherHidingAnalysis,
-  parseHostname,
-  _resetState,
-} from '../content/etherhiding_guard.js';
+import '../content/etherhiding_guard.js';
+const { checkRpcCallToBlockchainEndpoint, checkEthCallResponseInjected, checkContractAddressInInlineScript, checkWeb3LibraryOnNonDapp, checkDynamicScriptFromRpcResponse, decodeAbiResponse, calculateEtherHidingRiskScore, injectEtherHidingWarningBanner, runEtherHidingAnalysis, parseHostname, _resetState } = globalThis.__phishopsExports['etherhiding_guard'];
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */

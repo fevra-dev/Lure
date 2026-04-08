@@ -7,17 +7,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
 
-import {
-  checkPermissionRequestWithoutGesture,
-  checkFakeVerificationLure,
-  checkNotificationUrgencyContent,
-  checkRapidPermissionOnLoad,
-  checkCrossOriginNotificationLink,
-  calculateNotifRiskScore,
-  injectNotifWarningBanner,
-  runNotificationGuardAnalysis,
-  _resetState,
-} from '../content/notification_guard.js';
+import '../content/notification_guard.js';
+const { checkPermissionRequestWithoutGesture, checkFakeVerificationLure, checkNotificationUrgencyContent, checkRapidPermissionOnLoad, checkCrossOriginNotificationLink, calculateNotifRiskScore, injectNotifWarningBanner, runNotificationGuardAnalysis, _resetState } = globalThis.__phishopsExports['notification_guard'];
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */

@@ -6,7 +6,11 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
+// Content script uses classic-script-safe pattern: it has no top-level
+// `export` statements (Chrome MV3 content scripts can't parse them) and
+// registers its API on globalThis.__phishopsExports instead.
+import '../content/proxy_guard.js';
+const {
   checkAtSymbolUrlMasking,
   checkAuthPageDomainMismatch,
   checkSuspiciousFormAction,
@@ -15,7 +19,7 @@ import {
   checkResponseTimingAnomaly,
   calculateProxyRiskScore,
   injectProxyWarningBanner,
-} from '../content/proxy_guard.js';
+} = globalThis.__phishopsExports.proxy_guard;
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

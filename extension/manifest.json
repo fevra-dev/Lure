@@ -27,6 +27,11 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
+      "js": ["lib/shadow_dom_utils.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
       "js": ["content/state_parameter_abuse.js"],
       "run_at": "document_idle"
     },

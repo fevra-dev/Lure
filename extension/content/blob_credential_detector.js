@@ -52,11 +52,11 @@ const DISABLE_THRESHOLD = 0.80;
 // Core detection functions (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function countPasswordFields() {
+function countPasswordFields() {
   return document.querySelectorAll('input[type="password"], input[type=password]').length;
 }
 
-export function checkBrandKeywords() {
+function checkBrandKeywords() {
   const textSources = [
     document.title || '',
     document.body?.innerText?.substring(0, 5000) || '',
@@ -74,7 +74,7 @@ export function checkBrandKeywords() {
   };
 }
 
-export function checkNestedSmuggling() {
+function checkNestedSmuggling() {
   const scripts = [...document.querySelectorAll('script:not([src])')];
   let patternCount = 0;
 
@@ -94,7 +94,7 @@ export function checkNestedSmuggling() {
   };
 }
 
-export function checkFormExfiltration() {
+function checkFormExfiltration() {
   const forms = [...document.querySelectorAll('form')];
   const externalActions = forms
     .map(f => f.getAttribute('action') || '')
@@ -107,7 +107,7 @@ export function checkFormExfiltration() {
   };
 }
 
-export function calculateRiskScore({
+function calculateRiskScore({
   passwordFieldCount,
   matchedBrands,
   nestedSmugglingDetected,
@@ -149,7 +149,7 @@ export function calculateRiskScore({
 // Field disabler
 // ---------------------------------------------------------------------------
 
-export function disableCredentialFields(riskScore) {
+function disableCredentialFields(riskScore) {
   const fields = document.querySelectorAll('input[type="password"], input[type=password]');
 
   fields.forEach(field => {
@@ -161,7 +161,7 @@ export function disableCredentialFields(riskScore) {
   injectWarningBanner(riskScore);
 }
 
-export function injectWarningBanner(riskScore) {
+function injectWarningBanner(riskScore) {
   if (document.getElementById('phishops-blob-warning')) return;
 
   const banner = document.createElement('div');
@@ -223,7 +223,7 @@ function sendToBackground(payload) {
 // Main runner
 // ---------------------------------------------------------------------------
 
-export async function runBlobDetection() {
+async function runBlobDetection() {
   return new Promise((resolve) => {
     function run() {
       try {
@@ -286,4 +286,25 @@ export async function runBlobDetection() {
 // Auto-run when injected as a content script
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   runBlobDetection();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== "undefined") {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports["blob_credential_detector"] = {
+    countPasswordFields,
+    checkBrandKeywords,
+    checkNestedSmuggling,
+    checkFormExfiltration,
+    calculateRiskScore,
+    disableCredentialFields,
+    injectWarningBanner,    runBlobDetection,
+  
+  };
 }

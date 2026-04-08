@@ -25,7 +25,10 @@
 
 'use strict';
 
-import { deepQuerySelectorAll } from '../lib/shadow_dom_utils.js';
+// Provided by lib/shadow_dom_utils.js (loaded earlier in manifest as a
+// classic content script — registers on globalThis.__phishopsLib).
+const deepQuerySelectorAll = (typeof globalThis !== 'undefined' && globalThis.__phishopsLib?.deepQuerySelectorAll)
+  || ((sel, root = document) => Array.from((root || document).querySelectorAll(sel)));
 
 /* ------------------------------------------------------------------ */
 /*  Favicon Hash Signal                                                */
@@ -291,7 +294,7 @@ const LOTL_DOMAIN_BRAND_MAP = {
  * Check if page contains brand keywords/title patterns but hostname
  * doesn't match that brand's known domains.
  */
-export function checkBrandKeywordSignals(doc, hostname) {
+function checkBrandKeywordSignals(doc, hostname) {
   if (!doc || !hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -327,7 +330,7 @@ export function checkBrandKeywordSignals(doc, hostname) {
 /**
  * Check if page has login/credential form fields.
  */
-export function checkLoginFormSignals(doc) {
+function checkLoginFormSignals(doc) {
   if (!doc) return [];
 
   const signals = [];
@@ -352,7 +355,7 @@ export function checkLoginFormSignals(doc) {
 /**
  * Check if hostname is suspicious (free hosting, IP address, excessive subdomains).
  */
-export function checkDomainSuspicion(hostname) {
+function checkDomainSuspicion(hostname) {
   if (!hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -382,7 +385,7 @@ export function checkDomainSuspicion(hostname) {
  * Check text-to-HTML ratio — very low ratio with credential fields
  * suggests a GAN-generated or template phishing page.
  */
-export function checkTextToHtmlRatio(doc) {
+function checkTextToHtmlRatio(doc) {
   if (!doc) return [];
 
   const signals = [];
@@ -407,7 +410,7 @@ export function checkTextToHtmlRatio(doc) {
 /**
  * Check if favicon links reference a brand on a non-brand domain.
  */
-export function checkFaviconBrandMatch(doc, hostname) {
+function checkFaviconBrandMatch(doc, hostname) {
   if (!doc || !hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -443,7 +446,7 @@ export function checkFaviconBrandMatch(doc, hostname) {
  * Check if page uses brand-specific color palette on a non-brand domain.
  * Checks computed background-color and color on key elements.
  */
-export function checkColorPaletteMatch(doc, hostname) {
+function checkColorPaletteMatch(doc, hostname) {
   if (!doc || !hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -496,7 +499,7 @@ export function checkColorPaletteMatch(doc, hostname) {
  * Check if page is hosted on a trusted LOTL platform but impersonates
  * a different brand with credential fields present.
  */
-export function checkLOTLTrustedDomain(doc, hostname) {
+function checkLOTLTrustedDomain(doc, hostname) {
   if (!doc || !hostname) return [];
 
   // Find which LOTL platform this hostname belongs to
@@ -563,7 +566,7 @@ function rgbToHex(rgb) {
  * @param {Array<{id: string, weight: number}>} signals
  * @returns {{ riskScore: number, signalList: string[] }}
  */
-export function calculatePhishVisionRiskScore(signals) {
+function calculatePhishVisionRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -579,7 +582,7 @@ export function calculatePhishVisionRiskScore(signals) {
 /**
  * Inject a warning banner into the page.
  */
-export function injectPhishVisionWarningBanner(riskScore, matchedBrand, signals) {
+function injectPhishVisionWarningBanner(riskScore, matchedBrand, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-phishvision-banner')) return;
 
@@ -621,7 +624,7 @@ export function injectPhishVisionWarningBanner(riskScore, matchedBrand, signals)
 /**
  * Run full PhishVision analysis on the current page.
  */
-export async function runPhishVisionAnalysis() {
+async function runPhishVisionAnalysis() {
   if (typeof document === 'undefined') return;
 
   const hostname = globalThis.location?.hostname || '';
@@ -707,4 +710,27 @@ export async function runPhishVisionAnalysis() {
 
 if (typeof document !== 'undefined' && typeof process === 'undefined') {
   runPhishVisionAnalysis();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['phishvision'] = {
+    checkBrandKeywordSignals,
+    checkLoginFormSignals,
+    checkDomainSuspicion,
+    checkTextToHtmlRatio,
+    checkFaviconBrandMatch,
+    checkColorPaletteMatch,
+    checkLOTLTrustedDomain,
+    calculatePhishVisionRiskScore,
+    injectPhishVisionWarningBanner,    runPhishVisionAnalysis,
+  
+  };
 }

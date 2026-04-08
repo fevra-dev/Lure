@@ -6,15 +6,8 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkDangerousEthMethodCall,
-  checkApproveUnlimitedAllowance,
-  checkMulticallBatchTransaction,
-  checkKnownDrainerContract,
-  checkAirdropClaimLure,
-  calculateDrainerRiskScore,
-  injectDrainerWarningBanner,
-} from '../content/drainer_guard.js';
+import '../content/drainer_guard.js';
+const { checkDangerousEthMethodCall, checkApproveUnlimitedAllowance, checkMulticallBatchTransaction, checkKnownDrainerContract, checkAirdropClaimLure, calculateDrainerRiskScore, injectDrainerWarningBanner } = globalThis.__phishopsExports['drainer_guard'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

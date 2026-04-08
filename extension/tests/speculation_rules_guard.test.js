@@ -6,19 +6,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkCrossOriginPrerenderRule,
-  checkCrossOriginEagerPrefetch,
-  checkDynamicRuleInjection,
-  checkSuspiciousUrlPattern,
-  checkPrerenderWithoutNavigation,
-  calculateSrgRiskScore,
-  injectSrgWarningBanner,
-  removeMaliciousRules,
-  parseSpeculationRules,
-  isUrlCrossOrigin,
-  runSrgAnalysis,
-} from '../content/speculation_rules_guard.js';
+import '../content/speculation_rules_guard.js';
+const { checkCrossOriginPrerenderRule, checkCrossOriginEagerPrefetch, checkDynamicRuleInjection, checkSuspiciousUrlPattern, checkPrerenderWithoutNavigation, calculateSrgRiskScore, injectSrgWarningBanner, removeMaliciousRules, parseSpeculationRules, isUrlCrossOrigin, runSrgAnalysis } = globalThis.__phishopsExports['speculation_rules_guard'];
 
 const PAGE_ORIGIN = 'https://legit-bank.com';
 

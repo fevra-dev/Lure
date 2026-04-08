@@ -5,19 +5,8 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import {
-  checkDirectoryPickerInvoked,
-  checkFilePickerInvoked,
-  checkSavePickerInvoked,
-  checkDirectoryEnumeration,
-  checkFileReadAttempts,
-  checkCredentialFileTargeted,
-  checkWriteStreamOpened,
-  checkPostReadExfil,
-  calculateFsgRiskScore,
-  runFsgAnalysis,
-  _resetState,
-} from '../content/filesystem_guard_bridge.js';
+import '../content/filesystem_guard_bridge.js';
+const { checkDirectoryPickerInvoked, checkFilePickerInvoked, checkSavePickerInvoked, checkDirectoryEnumeration, checkFileReadAttempts, checkCredentialFileTargeted, checkWriteStreamOpened, checkPostReadExfil, calculateFsgRiskScore, runFsgAnalysis, _resetState } = globalThis.__phishopsExports['filesystem_guard_bridge'];
 
 /* ------------------------------------------------------------------ */
 /*  Test helpers                                                       */

@@ -8,15 +8,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import {
-  countPasswordFields,
-  checkBrandKeywords,
-  checkNestedSmuggling,
-  checkFormExfiltration,
-  calculateRiskScore,
-  disableCredentialFields,
-  injectWarningBanner,
-} from '../content/blob_credential_detector.js';
+import '../content/blob_credential_detector.js';
+const { countPasswordFields, checkBrandKeywords, checkNestedSmuggling, checkFormExfiltration, calculateRiskScore, disableCredentialFields, injectWarningBanner } = globalThis.__phishopsExports['blob_credential_detector'];
 
 // ---------------------------------------------------------------------------
 // DOM helpers

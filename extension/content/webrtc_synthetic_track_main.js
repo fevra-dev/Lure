@@ -39,7 +39,7 @@ const SIGNAL_WEIGHTS = {
 const ALERT_THRESHOLD = 0.50;
 const BLOCK_THRESHOLD = 0.70;
 
-export const VIDEO_CONFERENCING_DOMAINS = [
+const VIDEO_CONFERENCING_DOMAINS = [
   'zoom.us', 'meet.google.com', 'teams.microsoft.com', 'webex.com',
   'discord.com', 'whereby.com', 'gather.town', 'bluejeans.com',
   'gotomeeting.com', 'streamyard.com',
@@ -59,7 +59,7 @@ const ML_MODEL_PATTERNS = [
  * @param {string[]} signals
  * @returns {{ riskScore: number, signalList: string[] }}
  */
-export function computeSyntheticTrackRiskScore(signals) {
+function computeSyntheticTrackRiskScore(signals) {
   const score = signals.reduce((sum, s) => sum + (SIGNAL_WEIGHTS[s] ?? 0), 0);
   return {
     riskScore: Math.round(Math.min(score, 1.0) * 100) / 100,
@@ -73,7 +73,7 @@ export function computeSyntheticTrackRiskScore(signals) {
  * @param {{ label: string, getSettings?: () => object } | null} track
  * @returns {boolean}
  */
-export function isSyntheticTrack(track) {
+function isSyntheticTrack(track) {
   if (!track) return false;
   try {
     const settings = track.getSettings?.() ?? {};
@@ -88,7 +88,7 @@ export function isSyntheticTrack(track) {
  * @param {string} hostname
  * @returns {boolean}
  */
-export function isVideoConferencingDomain(hostname) {
+function isVideoConferencingDomain(hostname) {
   if (!hostname) return false;
   return VIDEO_CONFERENCING_DOMAINS.some(
     p => hostname === p || hostname.endsWith('.' + p),
@@ -207,4 +207,21 @@ if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.run
       return origFetch.call(this, input, init);
     };
   })();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['webrtc_synthetic_track_main'] = {
+    VIDEO_CONFERENCING_DOMAINS,
+    computeSyntheticTrackRiskScore,
+    isSyntheticTrack,
+    isVideoConferencingDomain,
+  };
 }

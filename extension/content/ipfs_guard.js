@@ -66,7 +66,7 @@ const BRAND_KEYWORDS = [
 /**
  * Check if hostname matches a known IPFS gateway domain.
  */
-export function checkGatewayHostedPage(hostname) {
+function checkGatewayHostedPage(hostname) {
   if (!hostname) return [];
 
   const isGateway = IPFS_GATEWAY_DOMAINS.some(
@@ -87,7 +87,7 @@ export function checkGatewayHostedPage(hostname) {
 /**
  * Check if page on an IPFS gateway contains credential fields.
  */
-export function checkCredentialOnGateway(doc, hostname) {
+function checkCredentialOnGateway(doc, hostname) {
   if (!doc || !hostname) return [];
 
   const isGateway = IPFS_GATEWAY_DOMAINS.some(
@@ -111,7 +111,7 @@ export function checkCredentialOnGateway(doc, hostname) {
 /**
  * Check if URL contains a CIDv0 or CIDv1 pattern.
  */
-export function checkCidInUrl(urlString) {
+function checkCidInUrl(urlString) {
   if (!urlString) return [];
 
   if (CID_V0_REGEX.test(urlString) || CID_V1_REGEX.test(urlString)) {
@@ -127,7 +127,7 @@ export function checkCidInUrl(urlString) {
 /**
  * Check if page contains 2+ links to IPFS gateway URLs.
  */
-export function checkExternalIpfsLinks(doc) {
+function checkExternalIpfsLinks(doc) {
   if (!doc) return [];
 
   const links = doc.querySelectorAll('a[href]');
@@ -157,7 +157,7 @@ export function checkExternalIpfsLinks(doc) {
 /**
  * Check if page on an IPFS gateway contains brand keywords.
  */
-export function checkSuspiciousIpfsContent(doc, hostname) {
+function checkSuspiciousIpfsContent(doc, hostname) {
   if (!doc || !hostname) return [];
 
   const isGateway = IPFS_GATEWAY_DOMAINS.some(
@@ -191,7 +191,7 @@ export function checkSuspiciousIpfsContent(doc, hostname) {
  * @param {Array<{id: string, weight: number}>} signals
  * @returns {{ riskScore: number, signalList: string[] }}
  */
-export function calculateIpfsRiskScore(signals) {
+function calculateIpfsRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -207,7 +207,7 @@ export function calculateIpfsRiskScore(signals) {
 /**
  * Inject a warning banner into the page.
  */
-export function injectIpfsWarningBanner(riskScore, signals) {
+function injectIpfsWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-ipfs-banner')) return;
 
@@ -252,7 +252,7 @@ export function injectIpfsWarningBanner(riskScore, signals) {
 /**
  * Run full IPFSGuard analysis on the current page.
  */
-export function runIpfsGuardAnalysis() {
+function runIpfsGuardAnalysis() {
   if (typeof document === 'undefined') return;
 
   const hostname = globalThis.location?.hostname || '';
@@ -310,4 +310,25 @@ export function runIpfsGuardAnalysis() {
 
 if (typeof document !== 'undefined' && typeof process === 'undefined') {
   runIpfsGuardAnalysis();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['ipfs_guard'] = {
+    checkGatewayHostedPage,
+    checkCredentialOnGateway,
+    checkCidInUrl,
+    checkExternalIpfsLinks,
+    checkSuspiciousIpfsContent,
+    calculateIpfsRiskScore,
+    injectIpfsWarningBanner,
+    runIpfsGuardAnalysis,
+  };
 }

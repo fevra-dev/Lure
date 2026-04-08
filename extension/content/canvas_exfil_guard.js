@@ -81,7 +81,7 @@ let analysisRun = false;
 /**
  * Check if the current page has canvas element(s) and no DOM credential fields.
  */
-export function isCanvasPageWithoutDomInputs(doc) {
+function isCanvasPageWithoutDomInputs(doc) {
   if (!doc) return false;
 
   const canvases = doc.querySelectorAll('canvas');
@@ -94,7 +94,7 @@ export function isCanvasPageWithoutDomInputs(doc) {
 /**
  * Check if the page has login/auth context via URL, title, or body text.
  */
-export function hasLoginContext(doc) {
+function hasLoginContext(doc) {
   if (!doc) return false;
 
   const url = (doc.location?.href || '').toLowerCase();
@@ -115,7 +115,7 @@ export function hasLoginContext(doc) {
 /**
  * Try to extract keys from a body string (JSON or form-encoded).
  */
-export function extractBodyKeys(body) {
+function extractBodyKeys(body) {
   if (!body || typeof body !== 'string') return [];
 
   // Try JSON
@@ -139,7 +139,7 @@ export function extractBodyKeys(body) {
 /**
  * Parse hostname from URL, return empty on failure.
  */
-export function parseHostname(url) {
+function parseHostname(url) {
   try {
     return new URL(url).hostname;
   } catch {
@@ -155,7 +155,7 @@ export function parseHostname(url) {
  * Signal 1: POST body contains credential-like field keys on canvas page.
  * Weight: 0.40
  */
-export function checkPostWithCredentialFields(records) {
+function checkPostWithCredentialFields(records) {
   if (!records || records.length === 0) return [];
 
   for (const rec of records) {
@@ -180,7 +180,7 @@ export function checkPostWithCredentialFields(records) {
  * Signal 2: POST request to a different hostname from a canvas page.
  * Weight: 0.30
  */
-export function checkCrossOriginPostFromCanvasPage(records, pageHostname) {
+function checkCrossOriginPostFromCanvasPage(records, pageHostname) {
   if (!records || records.length === 0 || !pageHostname) return [];
 
   for (const rec of records) {
@@ -203,7 +203,7 @@ export function checkCrossOriginPostFromCanvasPage(records, pageHostname) {
  * Signal 3: sendBeacon called on a canvas page with login context.
  * Weight: 0.25
  */
-export function checkBeaconFromCanvasPage(records, doc) {
+function checkBeaconFromCanvasPage(records, doc) {
   if (!records || records.length === 0 || !doc) return [];
 
   if (!hasLoginContext(doc)) return [];
@@ -225,7 +225,7 @@ export function checkBeaconFromCanvasPage(records, doc) {
  * Signal 4: POST body is small JSON (<500 bytes) with 2-5 key-value pairs.
  * Weight: 0.20
  */
-export function checkSmallJsonPostPattern(records) {
+function checkSmallJsonPostPattern(records) {
   if (!records || records.length === 0) return [];
 
   for (const rec of records) {
@@ -255,7 +255,7 @@ export function checkSmallJsonPostPattern(records) {
  * Signal 5: Image.src set to URL with credential-like query param keys.
  * Weight: 0.15
  */
-export function checkImagePixelExfilPattern(records) {
+function checkImagePixelExfilPattern(records) {
   if (!records || records.length === 0) return [];
 
   for (const rec of records) {
@@ -283,7 +283,7 @@ export function checkImagePixelExfilPattern(records) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculateCxgRiskScore(signals) {
+function calculateCxgRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -296,7 +296,7 @@ export function calculateCxgRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectCxgWarningBanner(riskScore, signals) {
+function injectCxgWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-cxg-banner')) return;
 
@@ -345,7 +345,7 @@ export function injectCxgWarningBanner(riskScore, signals) {
 /**
  * Run analysis on accumulated exfiltration records.
  */
-export function runCxgAnalysis(doc, records, pageHostname) {
+function runCxgAnalysis(doc, records, pageHostname) {
   if (!doc || !records || records.length === 0) return;
 
   const credFieldSignals = checkPostWithCredentialFields(records);
@@ -447,7 +447,7 @@ function maybeRecordExfil(method, url, body, channel) {
 /**
  * Install network proxy wrappers for fetch, XHR, sendBeacon, and Image.
  */
-export function installExfilProxies() {
+function installExfilProxies() {
   // Wrap fetch
   if (typeof window !== 'undefined' && window.fetch) {
     const origFetch = window.fetch;
@@ -532,11 +532,11 @@ export function installExfilProxies() {
 /*  Exported state accessors (for testing)                             */
 /* ------------------------------------------------------------------ */
 
-export function _getExfilRecords() {
+function _getExfilRecords() {
   return exfilRecords;
 }
 
-export function _resetState() {
+function _resetState() {
   exfilRecords.length = 0;
   analysisRun = false;
 }
@@ -547,4 +547,32 @@ export function _resetState() {
 
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   installExfilProxies();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['canvas_exfil_guard'] = {
+    isCanvasPageWithoutDomInputs,
+    hasLoginContext,
+    extractBodyKeys,
+    parseHostname,
+    checkPostWithCredentialFields,
+    checkCrossOriginPostFromCanvasPage,
+    checkBeaconFromCanvasPage,
+    checkSmallJsonPostPattern,
+    checkImagePixelExfilPattern,
+    calculateCxgRiskScore,
+    injectCxgWarningBanner,
+    runCxgAnalysis,
+    installExfilProxies,
+    _getExfilRecords,
+    _resetState,
+  };
 }

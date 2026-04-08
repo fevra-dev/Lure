@@ -82,7 +82,7 @@ let analysisRun = false;
 /**
  * Check if the page has login/auth context via URL, title, or body text.
  */
-export function hasLoginContext(doc) {
+function hasLoginContext(doc) {
   if (!doc) return false;
 
   const url = (doc.location?.href || '').toLowerCase();
@@ -103,7 +103,7 @@ export function hasLoginContext(doc) {
 /**
  * Return all <canvas> elements in the document.
  */
-export function getCanvasElements(doc) {
+function getCanvasElements(doc) {
   if (!doc) return [];
   return Array.from(doc.querySelectorAll('canvas'));
 }
@@ -115,7 +115,7 @@ export function getCanvasElements(doc) {
 /**
  * Check if canvas is present on a login-context page with no DOM credential fields.
  */
-export function checkIsolatedCanvasLoginContext(doc) {
+function checkIsolatedCanvasLoginContext(doc) {
   if (!doc) return [];
 
   const canvases = getCanvasElements(doc);
@@ -137,7 +137,7 @@ export function checkIsolatedCanvasLoginContext(doc) {
  * Check if a pure-canvas rendering framework (Flutter CanvasKit, CanvasUI,
  * Zebkit, Fabric.js) is loaded on a login-context page.
  */
-export function checkFrameworkRendererDetected(doc) {
+function checkFrameworkRendererDetected(doc) {
   if (!doc) return [];
 
   const canvases = getCanvasElements(doc);
@@ -179,7 +179,7 @@ export function checkFrameworkRendererDetected(doc) {
  * Check if page has very low DOM element count alongside a canvas element,
  * with no navigation/toolbar structure.
  */
-export function checkLowDomWithCanvas(doc) {
+function checkLowDomWithCanvas(doc) {
   if (!doc) return [];
 
   const canvases = getCanvasElements(doc);
@@ -205,7 +205,7 @@ export function checkLowDomWithCanvas(doc) {
  * Check if a canvas is large (≥300x200 or >40% viewport) on a page
  * with very few form-like elements.
  */
-export function checkSuspiciousCanvasDimensions(doc) {
+function checkSuspiciousCanvasDimensions(doc) {
   if (!doc) return [];
 
   const canvases = getCanvasElements(doc);
@@ -243,7 +243,7 @@ export function checkSuspiciousCanvasDimensions(doc) {
 /**
  * Check if canvas is present without any game engine markers in scripts.
  */
-export function checkCanvasWithoutGameContext(doc) {
+function checkCanvasWithoutGameContext(doc) {
   if (!doc) return [];
 
   const canvases = getCanvasElements(doc);
@@ -272,7 +272,7 @@ export function checkCanvasWithoutGameContext(doc) {
 /*  Risk Scoring                                                       */
 /* ------------------------------------------------------------------ */
 
-export function calculateCanvasPhishRiskScore(signals) {
+function calculateCanvasPhishRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -285,7 +285,7 @@ export function calculateCanvasPhishRiskScore(signals) {
 /*  Warning Banner                                                     */
 /* ------------------------------------------------------------------ */
 
-export function injectCanvasPhishWarningBanner(riskScore, signals) {
+function injectCanvasPhishWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-canvasphish-banner')) return;
 
@@ -335,7 +335,7 @@ export function injectCanvasPhishWarningBanner(riskScore, signals) {
  * Run canvas phishing analysis on the current page.
  * Called once at document_idle.
  */
-export function runCanvasPhishAnalysis(doc) {
+function runCanvasPhishAnalysis(doc) {
   if (!doc) return;
 
   const canvases = getCanvasElements(doc);
@@ -385,7 +385,7 @@ export function runCanvasPhishAnalysis(doc) {
 /*  Exported state accessors (for testing)                             */
 /* ------------------------------------------------------------------ */
 
-export function _resetState() {
+function _resetState() {
   analysisRun = false;
 }
 
@@ -398,4 +398,28 @@ if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.run
     runCanvasPhishAnalysis(document);
     analysisRun = true;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['canvas_phish_guard'] = {
+    hasLoginContext,
+    getCanvasElements,
+    checkIsolatedCanvasLoginContext,
+    checkFrameworkRendererDetected,
+    checkLowDomWithCanvas,
+    checkSuspiciousCanvasDimensions,
+    checkCanvasWithoutGameContext,
+    calculateCanvasPhishRiskScore,
+    injectCanvasPhishWarningBanner,
+    runCanvasPhishAnalysis,
+    _resetState,
+  };
 }

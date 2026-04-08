@@ -79,7 +79,7 @@ function trackGesture() {
 }
 
 // Exported for testing — allows tests to set gesture time
-export function _setLastGestureTimestamp(ts) {
+function _setLastGestureTimestamp(ts) {
   lastGestureTimestamp = ts;
 }
 
@@ -97,7 +97,7 @@ export function _setLastGestureTimestamp(ts) {
  * @param {boolean} [streamInfo.arbitraryResolution] - Continuous vs discrete resolution
  * @returns {{ id: string, weight: number }[]}
  */
-export function checkVirtualCameraSignals(devices, streamInfo) {
+function checkVirtualCameraSignals(devices, streamInfo) {
   const signals = [];
 
   // Signal 1: Virtual camera device label
@@ -143,7 +143,7 @@ export function checkVirtualCameraSignals(devices, streamInfo) {
  * Check page context for identity verification signals.
  * @returns {{ id: string, weight: number }[]}
  */
-export function checkWebRTCPageContext() {
+function checkWebRTCPageContext() {
   const signals = [];
 
   try {
@@ -178,7 +178,7 @@ export function checkWebRTCPageContext() {
 // Risk score calculation (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function calculateWebRTCRiskScore(signals) {
+function calculateWebRTCRiskScore(signals) {
   let score = 0.0;
   const signalList = [];
 
@@ -197,7 +197,7 @@ export function calculateWebRTCRiskScore(signals) {
 // Warning banner (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function injectWebRTCWarningBanner(riskScore, deviceLabel, signals) {
+function injectWebRTCWarningBanner(riskScore, deviceLabel, signals) {
   if (document.getElementById('phishops-webrtc-warning')) return;
 
   const banner = document.createElement('div');
@@ -257,7 +257,7 @@ function sendToBackground(payload) {
 // getUserMedia interceptor (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function installGetUserMediaInterceptor() {
+function installGetUserMediaInterceptor() {
   // Track user gestures
   document.addEventListener('click', trackGesture, true);
   document.addEventListener('keydown', trackGesture, true);
@@ -358,4 +358,23 @@ export function installGetUserMediaInterceptor() {
 
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   installGetUserMediaInterceptor();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['webrtc_guard'] = {
+    _setLastGestureTimestamp,
+    checkVirtualCameraSignals,
+    checkWebRTCPageContext,
+    calculateWebRTCRiskScore,
+    injectWebRTCWarningBanner,
+    installGetUserMediaInterceptor,
+  };
 }

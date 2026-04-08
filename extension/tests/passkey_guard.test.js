@@ -19,13 +19,8 @@ vi.stubGlobal('chrome', {
   },
 });
 
-import {
-  checkCredentialRequestSignals,
-  checkPasskeyPageContext,
-  calculatePasskeyRiskScore,
-  injectPasskeyWarningBanner,
-  installCredentialInterceptor,
-} from '../content/passkey_guard.js';
+import '../content/passkey_guard.js';
+const { checkCredentialRequestSignals, checkPasskeyPageContext, calculatePasskeyRiskScore, injectPasskeyWarningBanner, installCredentialInterceptor } = globalThis.__phishopsExports['passkey_guard'];
 
 beforeEach(() => {
   document.body.innerHTML = '';

@@ -20,14 +20,8 @@ vi.stubGlobal('chrome', {
   },
 });
 
-import {
-  checkVirtualCameraSignals,
-  checkWebRTCPageContext,
-  calculateWebRTCRiskScore,
-  injectWebRTCWarningBanner,
-  installGetUserMediaInterceptor,
-  _setLastGestureTimestamp,
-} from '../content/webrtc_guard.js';
+import '../content/webrtc_guard.js';
+const { checkVirtualCameraSignals, checkWebRTCPageContext, calculateWebRTCRiskScore, injectWebRTCWarningBanner, installGetUserMediaInterceptor, _setLastGestureTimestamp } = globalThis.__phishopsExports['webrtc_guard'];
 
 beforeEach(() => {
   document.body.innerHTML = '';

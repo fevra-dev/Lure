@@ -64,7 +64,7 @@ function trackGesture() {
 // Signal checks (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function checkFullscreenGestureSignal() {
+function checkFullscreenGestureSignal() {
   const signals = [];
   const fsEl = document.fullscreenElement;
 
@@ -78,7 +78,7 @@ export function checkFullscreenGestureSignal() {
   return signals;
 }
 
-export function checkFullscreenTargetSignals() {
+function checkFullscreenTargetSignals() {
   const signals = [];
   const fsEl = document.fullscreenElement;
 
@@ -109,7 +109,7 @@ export function checkFullscreenTargetSignals() {
   return signals;
 }
 
-export function checkPostFullscreenMutations(mutations) {
+function checkPostFullscreenMutations(mutations) {
   const signals = [];
 
   for (const mutation of mutations) {
@@ -171,7 +171,7 @@ export function checkPostFullscreenMutations(mutations) {
   });
 }
 
-export function checkCredentialFieldVisibility() {
+function checkCredentialFieldVisibility() {
   const signals = [];
   const fsEl = document.fullscreenElement;
 
@@ -189,7 +189,7 @@ export function checkCredentialFieldVisibility() {
 // Risk score calculation (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function calculateFullscreenRiskScore(signals) {
+function calculateFullscreenRiskScore(signals) {
   let score = 0.0;
   const signalList = [];
 
@@ -208,7 +208,7 @@ export function calculateFullscreenRiskScore(signals) {
 // Warning banner (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function injectFullscreenWarningBanner(riskScore, signals) {
+function injectFullscreenWarningBanner(riskScore, signals) {
   if (document.getElementById('phishops-fullscreen-warning')) return;
 
   const banner = document.createElement('div');
@@ -300,7 +300,7 @@ function sendToBackground(payload) {
 // Main runner (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function runFullscreenGuard() {
+function runFullscreenGuard() {
   // Track user gestures
   document.addEventListener('click', trackGesture, true);
   document.addEventListener('keydown', trackGesture, true);
@@ -390,4 +390,24 @@ function handleDetection(signals) {
 
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   runFullscreenGuard();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['fullscreen_guard'] = {
+    checkFullscreenGestureSignal,
+    checkFullscreenTargetSignals,
+    checkPostFullscreenMutations,
+    checkCredentialFieldVisibility,
+    calculateFullscreenRiskScore,
+    injectFullscreenWarningBanner,
+    runFullscreenGuard,
+  };
 }

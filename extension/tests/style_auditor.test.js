@@ -6,15 +6,8 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkCssExfilAttributeSelector,
-  checkHiddenIframeCredentialLoad,
-  checkInvisibleFormAutofillTrap,
-  checkCssImportExfilChain,
-  checkDynamicStyleInjection,
-  calculateStyleRiskScore,
-  injectStyleWarningBanner,
-} from '../content/style_auditor.js';
+import '../content/style_auditor.js';
+const { checkCssExfilAttributeSelector, checkHiddenIframeCredentialLoad, checkInvisibleFormAutofillTrap, checkCssImportExfilChain, checkDynamicStyleInjection, calculateStyleRiskScore, injectStyleWarningBanner } = globalThis.__phishopsExports['style_auditor'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

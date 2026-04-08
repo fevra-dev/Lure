@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { deepQuerySelectorAll } from '../lib/shadow_dom_utils.js';
+import '../lib/shadow_dom_utils.js';
+const { deepQuerySelectorAll } = globalThis.__phishopsExports.shadow_dom_utils;
 
 function makeDoc(html = '') {
   return new JSDOM(`<!DOCTYPE html><html><body>${html}</body></html>`).window.document;

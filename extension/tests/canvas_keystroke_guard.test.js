@@ -6,18 +6,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import {
-  checkKeyboardListenerOnCanvas,
-  checkCanvas2dContextOnLoginPage,
-  checkMultipleKeyboardEventTypes,
-  checkCanvasKeyboardNoDomInputs,
-  checkNoGameEngineWithCanvasKeys,
-  calculateCkgRiskScore,
-  injectCkgWarningBanner,
-  hasLoginContext,
-  hasGameEngineMarkers,
-  runCkgAnalysis,
-} from '../content/canvas_keystroke_guard_bridge.js';
+import '../content/canvas_keystroke_guard_bridge.js';
+const { checkKeyboardListenerOnCanvas, checkCanvas2dContextOnLoginPage, checkMultipleKeyboardEventTypes, checkCanvasKeyboardNoDomInputs, checkNoGameEngineWithCanvasKeys, calculateCkgRiskScore, injectCkgWarningBanner, hasLoginContext, hasGameEngineMarkers, runCkgAnalysis } = globalThis.__phishopsExports['canvas_keystroke_guard_bridge'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);

@@ -66,7 +66,7 @@ const PROXY_SIGNATURES = [
  * URL like https://login.microsoft.com@evil.com/path
  * The browser sends traffic to evil.com, but displays login.microsoft.com.
  */
-export function checkAtSymbolUrlMasking(urlString) {
+function checkAtSymbolUrlMasking(urlString) {
   if (!urlString) return [];
 
   const signals = [];
@@ -104,7 +104,7 @@ export function checkAtSymbolUrlMasking(urlString) {
  * Checks for login forms + auth provider references in page text/title
  * while hostname doesn't match the provider.
  */
-export function checkAuthPageDomainMismatch(doc, hostname) {
+function checkAuthPageDomainMismatch(doc, hostname) {
   if (!doc || !hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -160,7 +160,7 @@ export function checkAuthPageDomainMismatch(doc, hostname) {
 /**
  * Detect suspicious form actions that post to a different domain.
  */
-export function checkSuspiciousFormAction(doc, hostname) {
+function checkSuspiciousFormAction(doc, hostname) {
   if (!doc || !hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -200,7 +200,7 @@ export function checkSuspiciousFormAction(doc, hostname) {
  * Reverse proxies strip HTTP security headers; we check for CSP meta tags
  * since content scripts can't read HTTP response headers.
  */
-export function checkMissingSecurityHeaders(doc) {
+function checkMissingSecurityHeaders(doc) {
   if (!doc) return [];
 
   // Only fire on auth-like pages (pages with login forms)
@@ -223,7 +223,7 @@ export function checkMissingSecurityHeaders(doc) {
 /**
  * Detect DOM injection artifacts — foreign scripts, proxy framework signatures.
  */
-export function checkDomInjectionArtifacts(doc, hostname) {
+function checkDomInjectionArtifacts(doc, hostname) {
   if (!doc || !hostname) return [];
   if (hostname === 'localhost' || hostname === '127.0.0.1') return [];
 
@@ -268,7 +268,7 @@ export function checkDomInjectionArtifacts(doc, hostname) {
  * Detect response timing anomaly — proxy latency adds delay.
  * Uses PerformanceNavigationTiming API.
  */
-export function checkResponseTimingAnomaly() {
+function checkResponseTimingAnomaly() {
   const signals = [];
 
   try {
@@ -302,7 +302,7 @@ export function checkResponseTimingAnomaly() {
  * @param {Array<{id: string, weight: number}>} signals
  * @returns {{ riskScore: number, signalList: string[] }}
  */
-export function calculateProxyRiskScore(signals) {
+function calculateProxyRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -318,7 +318,7 @@ export function calculateProxyRiskScore(signals) {
 /**
  * Inject a warning banner for proxy detection.
  */
-export function injectProxyWarningBanner(riskScore, targetProvider, signals) {
+function injectProxyWarningBanner(riskScore, targetProvider, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-proxy-banner')) return;
 
@@ -360,7 +360,7 @@ export function injectProxyWarningBanner(riskScore, targetProvider, signals) {
 /**
  * Run full ProxyGuard analysis on the current page.
  */
-export function runProxyGuardAnalysis() {
+function runProxyGuardAnalysis() {
   if (typeof document === 'undefined') return;
 
   const hostname = globalThis.location?.hostname || '';
@@ -411,6 +411,29 @@ export function runProxyGuardAnalysis() {
       },
     }).catch(() => {});
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError at parse time. Register this module's public API
+// on a global namespace so vitest can side-effect-import the file and
+// read functions from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports.proxy_guard = {
+    checkAtSymbolUrlMasking,
+    checkAuthPageDomainMismatch,
+    checkSuspiciousFormAction,
+    checkMissingSecurityHeaders,
+    checkDomInjectionArtifacts,
+    checkResponseTimingAnomaly,
+    calculateProxyRiskScore,
+    injectProxyWarningBanner,
+    runProxyGuardAnalysis,
+  };
 }
 
 /* ------------------------------------------------------------------ */

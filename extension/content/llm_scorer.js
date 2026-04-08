@@ -117,7 +117,7 @@ const COMMON_TYPO_PATTERNS = [
  * LLM-generated text tends to produce sentences with very low variance
  * in length (CV < 0.15), while human text varies much more.
  */
-export function checkUniformSentenceLength(bodyText) {
+function checkUniformSentenceLength(bodyText) {
   if (!bodyText) return [];
 
   // Split into sentences (period, exclamation, question mark)
@@ -154,7 +154,7 @@ export function checkUniformSentenceLength(bodyText) {
  * LLM phishing pages pack urgency phrases at high density because the
  * generation prompt typically says "make it urgent".
  */
-export function checkUrgencyPhraseDensity(bodyText) {
+function checkUrgencyPhraseDensity(bodyText) {
   if (!bodyText || bodyText.length < 100) return [];
 
   let matchCount = 0;
@@ -183,7 +183,7 @@ export function checkUrgencyPhraseDensity(bodyText) {
  * Humans naturally make typos; LLM-generated text is perfectly spelled.
  * This signal only fires when credential fields are present (context gate).
  */
-export function checkLowTypoRateWithCredForm(doc, bodyText) {
+function checkLowTypoRateWithCredForm(doc, bodyText) {
   if (!doc || !bodyText) return [];
 
   // Must have credential fields
@@ -214,7 +214,7 @@ export function checkLowTypoRateWithCredForm(doc, bodyText) {
  * LLM-generated HTML tends to produce structurally identical sibling elements
  * (e.g., 5 <div> children each with exactly <h3>+<p>+<a> inside).
  */
-export function checkRepetitiveDomStructure(doc) {
+function checkRepetitiveDomStructure(doc) {
   if (!doc || !doc.body) return [];
 
   // Check all container elements for repetitive children
@@ -255,7 +255,7 @@ export function checkRepetitiveDomStructure(doc) {
  * Check for AI generation metadata artifacts in page source.
  * Some LLM phishing kits leave traces in meta tags or HTML comments.
  */
-export function checkAiMetaArtifacts(doc) {
+function checkAiMetaArtifacts(doc) {
   if (!doc) return [];
 
   // Check meta tags
@@ -298,7 +298,7 @@ export function checkAiMetaArtifacts(doc) {
  * a suppression blocklist into a detection dictionary. Scored by density:
  * hits per 100 words. >2.0 = high confidence (+0.20), >0.8 = moderate (+0.10).
  */
-export function checkSlopPhraseDensity(bodyText) {
+function checkSlopPhraseDensity(bodyText) {
   if (!bodyText) return [];
 
   const words = bodyText.split(/\s+/).filter(w => w.length > 0);
@@ -343,7 +343,7 @@ export function checkSlopPhraseDensity(bodyText) {
  * @param {Array<{id: string, weight: number}>} signals
  * @returns {{ riskScore: number, signalList: string[] }}
  */
-export function calculateLlmRiskScore(signals) {
+function calculateLlmRiskScore(signals) {
   if (!signals || signals.length === 0) return { riskScore: 0, signalList: [] };
 
   const riskScore = Math.min(signals.reduce((sum, s) => sum + s.weight, 0), 1.0);
@@ -359,7 +359,7 @@ export function calculateLlmRiskScore(signals) {
 /**
  * Inject a warning banner into the page.
  */
-export function injectLlmWarningBanner(riskScore, signals) {
+function injectLlmWarningBanner(riskScore, signals) {
   if (typeof document === 'undefined') return;
   if (document.getElementById('phishops-llm-banner')) return;
 
@@ -400,7 +400,7 @@ export function injectLlmWarningBanner(riskScore, signals) {
 /**
  * Run full LLMScorer analysis on the current page.
  */
-export function runLlmScorerAnalysis() {
+function runLlmScorerAnalysis() {
   if (typeof document === 'undefined') return;
 
   const hostname = globalThis.location?.hostname || '';
@@ -457,4 +457,26 @@ export function runLlmScorerAnalysis() {
 
 if (typeof document !== 'undefined' && typeof process === 'undefined') {
   runLlmScorerAnalysis();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Test export bridge                                                 */
+/* ------------------------------------------------------------------ */
+// Chrome MV3 content scripts are classic scripts — top-level `export`
+// throws SyntaxError. Register public API on a global namespace so
+// vitest can side-effect-import and read from the global.
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__phishopsExports = globalThis.__phishopsExports || {};
+  globalThis.__phishopsExports['llm_scorer'] = {
+    checkUniformSentenceLength,
+    checkUrgencyPhraseDensity,
+    checkLowTypoRateWithCredForm,
+    checkRepetitiveDomStructure,
+    checkAiMetaArtifacts,
+    checkSlopPhraseDensity,
+    calculateLlmRiskScore,
+    injectLlmWarningBanner,
+    runLlmScorerAnalysis,
+  };
 }
