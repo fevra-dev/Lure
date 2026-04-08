@@ -121,6 +121,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   exportJsonBtn.addEventListener('click', () => handleExport('json'));
   exportCsvBtn.addEventListener('click', () => handleExport('csv'));
 
+  const clearAllBtn = document.getElementById('clearAllBtn');
+  const clearOldBtn = document.getElementById('clearOldBtn');
+
+  clearAllBtn.addEventListener('click', handleClearAll);
+  clearOldBtn.addEventListener('click', handleClearOld);
+
   // Footer: version + detector count
   try {
     const manifest = chrome.runtime.getManifest();
@@ -576,4 +582,52 @@ async function handleExport(format) {
   }
 
   api.triggerBlobDownload(filename, mime, content);
+}
+
+/* ── Clear handlers ─────────────────────────────────────────── */
+
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+async function handleClearAll() {
+  if (!confirm('Clear ALL stored LURE events? This cannot be undone.')) return;
+  try {
+    await chrome.storage.local.set({ [STORAGE_KEY]: [] });
+    if (chrome.action?.setBadgeText) {
+      chrome.action.setBadgeText({ text: '' });
+    }
+    // The onChanged listener will re-render the list, but trigger immediately
+    // for responsiveness in case the listener is flaky on first install.
+    updateStats([]);
+    renderEventsList([]);
+  } catch (err) {
+    console.warn('[LURE popup] clear all failed:', err);
+  }
+}
+
+async function handleClearOld() {
+  try {
+    const data = await chrome.storage.local.get(STORAGE_KEY);
+    const events = data[STORAGE_KEY] || [];
+    if (events.length === 0) return;
+
+    const cutoff = Date.now() - SEVEN_DAYS_MS;
+    const kept = events.filter((e) => {
+      const t = Date.parse(e.timestamp);
+      return Number.isFinite(t) && t >= cutoff;
+    });
+
+    const removed = events.length - kept.length;
+    if (removed === 0) {
+      alert('No events older than 7 days to clear.');
+      return;
+    }
+
+    if (!confirm(`Remove ${removed} event${removed === 1 ? '' : 's'} older than 7 days?`)) return;
+
+    await chrome.storage.local.set({ [STORAGE_KEY]: kept });
+    updateStats(kept);
+    renderEventsList(kept);
+  } catch (err) {
+    console.warn('[LURE popup] clear old failed:', err);
+  }
 }
