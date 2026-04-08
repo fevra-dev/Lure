@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { eventsToJSON } from '../lib/event_export.js';
+import { eventsToJSON, eventsToCSV } from '../lib/event_export.js';
 
 const SAMPLE_EVENTS = [
   {
@@ -46,5 +46,39 @@ describe('eventsToJSON', () => {
     const parsed = JSON.parse(out);
     expect(parsed.eventCount).toBe(0);
     expect(parsed.events).toEqual([]);
+  });
+});
+
+describe('eventsToCSV', () => {
+  it('produces a header row and one row per event with core columns', () => {
+    const csv = eventsToCSV(SAMPLE_EVENTS);
+    const lines = csv.split('\n');
+    expect(lines[0]).toBe('timestamp,severity,eventType,url,extensionVersion,signals,detail');
+    expect(lines).toHaveLength(3); // header + 2 events
+    expect(lines[1]).toContain('2026-04-08T10:15:00.000Z');
+    expect(lines[1]).toContain('Critical');
+    expect(lines[1]).toContain('PROXY_AITM_DETECTED');
+    expect(lines[1]).toContain('https://evil.example/login');
+  });
+
+  it('quotes fields containing commas, quotes, or newlines', () => {
+    const csv = eventsToCSV([{
+      eventType: 'TEST',
+      severity: 'Low',
+      timestamp: '2026-04-08T00:00:00.000Z',
+      url: 'https://a,b.test/"quoted"',
+      extensionVersion: '1.0.0',
+      signals: ['one', 'two,three'],
+    }]);
+    const lines = csv.split('\n');
+    // URL contains a comma AND double-quotes → must be wrapped in quotes with "" escapes
+    expect(lines[1]).toContain('"https://a,b.test/""quoted"""');
+    // signals joined with "; " and wrapped because it contains ","
+    expect(lines[1]).toContain('"one; two,three"');
+  });
+
+  it('handles empty input by returning only the header', () => {
+    const csv = eventsToCSV([]);
+    expect(csv).toBe('timestamp,severity,eventType,url,extensionVersion,signals,detail');
   });
 });
