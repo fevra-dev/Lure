@@ -115,6 +115,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderEventsList(currentEvents);
   });
 
+  const exportJsonBtn = document.getElementById('exportJsonBtn');
+  const exportCsvBtn = document.getElementById('exportCsvBtn');
+
+  exportJsonBtn.addEventListener('click', () => handleExport('json'));
+  exportCsvBtn.addEventListener('click', () => handleExport('csv'));
+
   // Footer: version + detector count
   try {
     const manifest = chrome.runtime.getManifest();
@@ -533,4 +539,41 @@ function _escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/* ── Export handlers ────────────────────────────────────────── */
+
+async function handleExport(format) {
+  const api = window.LureEventExport;
+  if (!api) {
+    console.warn('[LURE popup] export library not loaded');
+    return;
+  }
+
+  let events = [];
+  try {
+    const data = await chrome.storage.local.get(STORAGE_KEY);
+    events = data[STORAGE_KEY] || [];
+  } catch (err) {
+    console.warn('[LURE popup] export read failed:', err);
+    return;
+  }
+
+  const now = new Date();
+  const filename = api.buildExportFilename(format, now);
+  const version = (() => {
+    try { return chrome.runtime.getManifest().version; } catch { return 'unknown'; }
+  })();
+
+  let content;
+  let mime;
+  if (format === 'json') {
+    content = api.eventsToJSON(events, { now, extensionVersion: version });
+    mime = 'application/json';
+  } else {
+    content = api.eventsToCSV(events);
+    mime = 'text/csv';
+  }
+
+  api.triggerBlobDownload(filename, mime, content);
 }
