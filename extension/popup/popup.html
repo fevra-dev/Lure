@@ -25,7 +25,7 @@
 
     body {
       width: 440px;
-      height: 400px;
+      height: 640px;
       background: transparent;
       font-family: var(--font-sans);
       overflow: hidden;
@@ -242,6 +242,135 @@
       animation: text-flash 0.5s ease-out;
     }
 
+    /* ── Action Bar ─────────────────────────── */
+    .action-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .action-btn {
+      flex: 1;
+      background: var(--bg-stats);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+
+    .action-btn:hover {
+      background: #2d3439;
+      border-color: var(--accent-bronze);
+    }
+
+    .action-btn-danger:hover {
+      border-color: var(--accent-red);
+      color: var(--accent-red);
+    }
+
+    /* ── Events List ────────────────────────── */
+    .events-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 12px;
+      height: 180px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 10px;
+    }
+
+    .events-panel::-webkit-scrollbar { width: 6px; }
+    .events-panel::-webkit-scrollbar-track { background: transparent; }
+    .events-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .events-empty {
+      color: var(--text-dim);
+      text-align: center;
+      padding: 24px 8px;
+      font-size: 10px;
+    }
+
+    .event-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 6px;
+      border-bottom: 1px solid rgba(59, 66, 72, 0.4);
+      cursor: pointer;
+      transition: background-color 0.12s;
+    }
+
+    .event-row:hover {
+      background: rgba(139, 158, 115, 0.05);
+    }
+
+    .event-row:last-child { border-bottom: none; }
+
+    .event-sev {
+      display: inline-block;
+      min-width: 56px;
+      text-align: center;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 8px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .event-sev-critical { background: rgba(194, 94, 94, 0.2); color: var(--accent-red); }
+    .event-sev-high     { background: rgba(181, 154, 109, 0.2); color: var(--accent-bronze); }
+    .event-sev-medium   { background: rgba(126, 196, 207, 0.15); color: var(--accent-cyan); }
+    .event-sev-low      { background: rgba(139, 158, 115, 0.15); color: var(--accent-olive); }
+
+    .event-detector {
+      flex: 1;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-domain {
+      color: var(--text-muted);
+      max-width: 110px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-time {
+      color: var(--text-dim);
+      font-size: 9px;
+    }
+
+    .event-detail {
+      background: rgba(0, 0, 0, 0.25);
+      border-left: 2px solid var(--accent-bronze);
+      padding: 8px 10px;
+      margin: 2px 4px 6px 4px;
+      font-size: 9px;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .event-detail-key {
+      color: var(--text-muted);
+      display: inline-block;
+      min-width: 110px;
+    }
+
     /* ── Footer ─────────────────────────────── */
     .footer {
       padding-top: 8px;
@@ -325,6 +454,19 @@
       </div>
     </div>
 
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <button class="action-btn" id="exportJsonBtn" type="button">Export JSON</button>
+      <button class="action-btn" id="exportCsvBtn" type="button">Export CSV</button>
+      <button class="action-btn action-btn-danger" id="clearOldBtn" type="button" title="Clear events older than 7 days">Clear &gt;7d</button>
+      <button class="action-btn action-btn-danger" id="clearAllBtn" type="button">Clear All</button>
+    </div>
+
+    <!-- Recent Events List -->
+    <div class="events-panel" id="eventsPanel">
+      <div class="events-empty">No events captured yet.</div>
+    </div>
+
     <!-- Footer -->
     <footer class="footer">
       <div class="telemetry-status">
@@ -338,6 +480,7 @@
 
   </div>
 
+  <script type="module" src="../lib/event_export.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
