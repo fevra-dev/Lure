@@ -80,6 +80,7 @@ const EVENT_TYPE_LABELS = {
 let canvas, ctx;
 let totalEl, highEl, criticalEl;
 let telemetryDot, telemetryText, toggle;
+let eventsPanel;
 
 /* ── State ──────────────────────────────────────────────────── */
 
@@ -102,6 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   telemetryDot = document.getElementById('telemetryDot');
   telemetryText = document.getElementById('telemetryText');
   toggle = document.getElementById('activeToggle');
+  eventsPanel = document.getElementById('eventsPanel');
 
   // Footer: version + detector count
   try {
@@ -146,6 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Update stats
       updateStats(newEvents);
+      renderEventsList(newEvents);
 
       // Spawn packets for new events
       if (added > 0 && isRunning) {
@@ -169,6 +172,7 @@ async function loadAndReplayEvents() {
 
   lastEventCount = events.length;
   updateStats(events);
+  renderEventsList(events);
 
   if (events.length > 0 && isRunning) {
     // Replay recent events as an initial burst
@@ -411,4 +415,72 @@ function draw() {
   }
 
   requestAnimationFrame(draw);
+}
+
+/* ── Events List rendering ─────────────────────────────────── */
+
+const MAX_LIST_EVENTS = 50;
+
+function renderEventsList(events) {
+  if (!eventsPanel) return;
+
+  if (!events || events.length === 0) {
+    eventsPanel.innerHTML = '<div class="events-empty">No events captured yet.</div>';
+    return;
+  }
+
+  const slice = events.slice(0, MAX_LIST_EVENTS);
+  const frag = document.createDocumentFragment();
+
+  slice.forEach((evt, idx) => {
+    const row = document.createElement('div');
+    row.className = 'event-row';
+    row.dataset.idx = String(idx);
+
+    const sev = (evt.severity || 'Low');
+    const sevClass = `event-sev-${sev.toLowerCase()}`;
+    row.innerHTML = `
+      <span class="event-sev ${sevClass}">${_escapeHtml(sev)}</span>
+      <span class="event-detector">${_escapeHtml(_detectorLabel(evt))}</span>
+      <span class="event-domain">${_escapeHtml(_hostOf(evt))}</span>
+      <span class="event-time">${_escapeHtml(_shortTime(evt.timestamp))}</span>
+    `;
+    frag.appendChild(row);
+  });
+
+  eventsPanel.innerHTML = '';
+  eventsPanel.appendChild(frag);
+}
+
+function _detectorLabel(evt) {
+  return EVENT_TYPE_LABELS[evt.eventType] || evt.eventType || 'Unknown';
+}
+
+function _hostOf(evt) {
+  if (evt.domain) return evt.domain;
+  if (evt.url) {
+    try { return new URL(evt.url).hostname; } catch { return evt.url; }
+  }
+  return '';
+}
+
+function _shortTime(iso) {
+  if (!iso) return '';
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return '';
+  const d = new Date(t);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) {
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  return `${d.getMonth() + 1}/${d.getDate()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function _escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
