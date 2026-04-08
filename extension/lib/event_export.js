@@ -91,6 +91,47 @@ function _csvQuote(s) {
   return s;
 }
 
-const LureEventExport = { eventsToJSON, eventsToCSV };
+/**
+ * Build a timestamped filename for an export.
+ *
+ * @param {'json'|'csv'} format
+ * @param {Date} now
+ */
+function buildExportFilename(format, now) {
+  if (format !== 'json' && format !== 'csv') {
+    throw new Error(`unsupported export format: ${format}`);
+  }
+  const iso = now.toISOString();            // 2026-04-08T10:15:03.123Z
+  const stamp = iso.slice(0, 19).replace(/:/g, '-'); // 2026-04-08T10-15-03
+  return `lure-events-${stamp}.${format}`;
+}
+
+/**
+ * Trigger a file download from a string blob inside the popup page.
+ * Uses an anchor + URL.createObjectURL — no `downloads` permission needed.
+ *
+ * @param {string} filename
+ * @param {string} mimeType
+ * @param {string} content
+ */
+function triggerBlobDownload(filename, mimeType, content) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Release the blob URL on the next tick — giving the browser time to start the download.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const LureEventExport = {
+  eventsToJSON,
+  eventsToCSV,
+  buildExportFilename,
+  triggerBlobDownload,
+};
 if (typeof window !== 'undefined') window.LureEventExport = LureEventExport;
-export { eventsToJSON, eventsToCSV };
+export { eventsToJSON, eventsToCSV, buildExportFilename, triggerBlobDownload };

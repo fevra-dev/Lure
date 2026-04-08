@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { eventsToJSON, eventsToCSV } from '../lib/event_export.js';
+import { eventsToJSON, eventsToCSV, buildExportFilename } from '../lib/event_export.js';
 
 const SAMPLE_EVENTS = [
   {
@@ -80,5 +80,21 @@ describe('eventsToCSV', () => {
   it('handles empty input by returning only the header', () => {
     const csv = eventsToCSV([]);
     expect(csv).toBe('timestamp,severity,eventType,url,extensionVersion,signals,detail');
+  });
+});
+
+describe('buildExportFilename', () => {
+  it('builds a timestamped filename for JSON', () => {
+    const name = buildExportFilename('json', new Date('2026-04-08T10:15:03.123Z'));
+    expect(name).toBe('lure-events-2026-04-08T10-15-03.json');
+  });
+
+  it('builds a timestamped filename for CSV', () => {
+    const name = buildExportFilename('csv', new Date('2026-04-08T10:15:03.123Z'));
+    expect(name).toBe('lure-events-2026-04-08T10-15-03.csv');
+  });
+
+  it('throws on unknown format', () => {
+    expect(() => buildExportFilename('xml', new Date())).toThrow(/format/);
   });
 });
