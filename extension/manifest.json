@@ -258,56 +258,5 @@
 
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none';"
-  },
-
-  "_architecture": {
-    "telemetry": "All detection events are persisted to chrome.storage.local via lib/telemetry.js. In a production SOC deployment, emitTelemetry() would POST to an Azure Monitor Data Collection Rule (DCR) endpoint for ingestion into the BrowserPhishingTelemetry_CL Sentinel table. For this portfolio build, console.info + local storage is sufficient to demonstrate the pipeline.",
-    "detectors": {
-      "wave1_oauthguard": "OAuth device code flow + state parameter email encoding — background/service-worker.js",
-      "wave1_proxyguard": "AiTM reverse-proxy detection via header analysis — background/service-worker.js",
-      "wave2_dataegress": "blob: URL credential page detection — programmatic injection via webNavigation",
-      "wave3_extensionauditor": "DNR header stripping, ownership drift, C2 polling — background/service-worker.js",
-      "wave3_agentintentguard": "GAN-optimised page + credential focus monitoring — content/agentintentguard.js",
-      "wave4_autofillguard": "Hidden field harvest + DOM extension clickjacking detection — content/autofill_guard.js",
-      "wave5_clickfix": "ClickFix clipboard injection interception — content/clickfix_clipboard_defender.js",
-      "wave5_fullscreenguard": "Browser-in-the-Middle fullscreen overlay detection — content/fullscreen_guard.js",
-      "wave6_passkeyguard": "WebAuthn/Passkey credential substitution detection — content/passkey_guard.js",
-      "wave6_qrljackingguard": "QR code session hijacking detection — content/qrljacking_guard.js",
-      "wave7_webrtcguard": "WebRTC virtual camera detection — content/webrtc_guard.js",
-      "wave7_screenshareguard": "TOAD screen share detection — content/screenshare_guard.js",
-      "wave8_phishvision": "Brand impersonation detection — content/phishvision.js",
-      "wave8_proxyguard": "AiTM reverse proxy detection — content/proxy_guard.js + background/service-worker.js",
-      "wave9_syncguard": "Browser sync hijacking detection — content/sync_guard.js",
-      "wave9_fakesender": "Helpdesk platform brand impersonation — content/fakesender_shield.js",
-      "wave10_ctapguard": "FIDO downgrade detection (Safari/Windows UA spoof, platform mismatch) — content/ctap_guard.js",
-      "wave10_ipfsguard": "IPFS gateway phishing detection (CID patterns, gateway blocklist) — content/ipfs_guard.js",
-      "wave10_lotl": "Living-off-the-Land trusted domain credential harvesting — content/phishvision.js (LOTL enhancement)",
-      "wave11_llmscorer": "AI-generated phishing page detection (sentence uniformity, urgency density, typo absence, DOM repetition) — content/llm_scorer.js",
-      "wave11_vncguard": "EvilnoVNC WebSocket AiTM detection (noVNC library, canvas interaction, RFB protocol) — content/vnc_guard.js",
-      "wave12_pwaguard": "Progressive Web App install phishing detection (manifest brand mismatch, standalone mode) — content/pwa_guard.js",
-      "wave12_tpasentinel": "Third-party app consent phishing detection (high-risk scopes, unverified publisher) — content/tpa_sentinel.js",
-      "wave13_drainerguard": "Crypto wallet drainer detection (dangerous eth methods, unlimited approve, multicall) — content/drainer_guard.js",
-      "wave13_styleauditor": "CSS credential exfiltration + LOTL DOM camouflage detection — content/style_auditor.js",
-      "wave14_wsexfilguard": "WebSocket credential exfiltration detection (keystroke relay, cross-origin WS, form value leakage) — content/ws_exfil_guard.js",
-      "wave14_swguard": "Service Worker phishing persistence detection (SW registration on cred page, fetch handler, push/sync/cache abuse) — content/sw_guard.js",
-      "wave15_etherhidingguard": "Blockchain-hosted phishing payload delivery via BSC/ETH eth_call JSON-RPC (ClearFake/ClickFix) — content/etherhiding_guard.js",
-      "wave15_notificationguard": "Browser push notification phishing via fake CAPTCHA/verification lures — content/notification_guard.js",
-      "wave16_webtransportguard": "WebTransport AiTM credential relay detection (self-signed cert hashes, cross-origin transport, stream data exfil) — content/webtransport_guard.js",
-      "wave17_canvasphishguard": "Canvas-rendered credential phishing detection (canvas login context, Flutter/CanvasKit WASM, low DOM complexity, game engine exclusion) — content/canvas_phish_guard.js",
-      "wave18_canvaskeystrokeguard": "Canvas keyboard listener interception + context type tracking (MAIN world API proxying) — content/canvas_keystroke_guard_main.js + bridge",
-      "wave18_canvasexfilguard": "Canvas credential exfiltration detection (fetch/XHR/sendBeacon/Image POST monitoring on canvas-dominated pages) — content/canvas_exfil_guard.js",
-      "wave19_speculationrulesguard": "Speculation Rules API phishing detection (cross-origin prerender/prefetch, dynamic injection, suspicious URL patterns, active defense via element removal) — content/speculation_rules_guard.js",
-      "wave20_stealthkit": "Proxy-based API wrapper hardening (toString patching, stack sanitisation, Proxy-based wrapping) — lib/stealth_kit.js",
-      "wave20_probeguard": "Security tool probing meta-detection (toString probing, iframe cross-frame verification, timing analysis, WAR fingerprinting, prototype lie detection) — content/probe_guard_main.js + bridge",
-      "wave21_paymentrequestguard": "Payment Request API phishing signal — low-confidence supplementary constructor/show() monitoring (PII harvesting via browser-native payment UI) — content/payment_request_guard_main.js + bridge",
-      "wave22_filesystemguard": "File System Access API picker abuse — showDirectoryPicker/showOpenFilePicker/showSaveFilePicker interception, credential file enumeration (.aws, .kube, .env, id_rsa, Login Data), post-read network exfiltration correlation — content/filesystem_guard_main.js + bridge",
-      "wave23_threatintelsync": "Periodic threat intel ingestion from PhishStats API + phishnet.cc feed.txt — domain/IP reputation lookup via chrome.alarms-based sync every 4h, stored in chrome.storage.local['threatIntel'], checked on webNavigation.onCommitted — lib/threat_intel_sync.js",
-      "wave24_spanavigationnmonitor": "Same-document navigation (history.pushState + Navigation API intercept) to login-pattern paths — chrome.webNavigation.onHistoryStateUpdated listener, MITRE T1185 — background/service-worker.js",
-      "wave25_webrtcdeepfakesentinel": "MediaStreamTrackGenerator + MediaStreamTrackProcessor constructor Proxy interception — synthetic video track detection for browser-based deepfake injection into WebRTC calls, MITRE T1566.003 — content/webrtc_synthetic_track_main.js + bridge"
-    },
-    "backlog": {
-      "trusted_types_compatibility": "Ensure all content script DOM manipulation uses TT-compatible APIs (textContent, createElement/appendChild, DOMPurify with RETURN_TRUSTED_TYPE: true) so PhishOps does not break on TT-enforcing sites (Google Workspace, YouTube, Meta properties).",
-      "trusted_types_threat_model": "Trusted Types default policy abuse is a known theoretical vector with no practical relevance to PhaaS operations. Revisit if TT adoption exceeds ~5% of the Tranco top 10K or if any PhaaS kit demonstrates TT awareness."
-    }
   }
 }

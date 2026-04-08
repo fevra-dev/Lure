@@ -19,6 +19,9 @@
 
 'use strict';
 
+/* __IIFE_WRAPPED__ */
+(function () {
+
 (function() {
   if (typeof window.PaymentRequest === 'undefined') return;
 
@@ -91,4 +94,6 @@
       return origShow.apply(this, args);
     };
   }
+})();
+
 })();

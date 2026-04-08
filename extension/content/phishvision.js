@@ -25,6 +25,9 @@
 
 'use strict';
 
+/* __IIFE_WRAPPED__ */
+(function () {
+
 // Provided by lib/shadow_dom_utils.js (loaded earlier in manifest as a
 // classic content script — registers on globalThis.__phishopsLib).
 const deepQuerySelectorAll = (typeof globalThis !== 'undefined' && globalThis.__phishopsLib?.deepQuerySelectorAll)
@@ -734,3 +737,5 @@ if (typeof globalThis !== 'undefined') {
   
   };
 }
+
+})();

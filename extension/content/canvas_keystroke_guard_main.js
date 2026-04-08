@@ -18,6 +18,9 @@
 
 'use strict';
 
+/* __IIFE_WRAPPED__ */
+(function () {
+
 (function() {
   const SOURCE = 'PHISHOPS_CKG';
   const sk = globalThis.__PHISHOPS_STEALTH;
@@ -144,4 +147,6 @@
     } catch { /* DOM may not be ready at document_start */ }
     return -1;
   }
+})();
+
 })();

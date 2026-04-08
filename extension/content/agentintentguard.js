@@ -23,6 +23,9 @@
 
 'use strict';
 
+/* __IIFE_WRAPPED__ */
+(function () {
+
 // ---------------------------------------------------------------------------
 // AgentReasoningMonitor — inline (no external module dependency)
 // ---------------------------------------------------------------------------
@@ -192,3 +195,5 @@ if (typeof globalThis !== 'undefined') {
     AgentReasoningMonitor,
   };
 }
+
+})();

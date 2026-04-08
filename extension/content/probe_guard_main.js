@@ -20,6 +20,9 @@
 
 'use strict';
 
+/* __IIFE_WRAPPED__ */
+(function () {
+
 (function() {
   const SOURCE = 'PHISHOPS_PG';
   const sk = globalThis.__PHISHOPS_STEALTH;
@@ -277,4 +280,6 @@
       },
     });
   }
+})();
+
 })();

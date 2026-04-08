@@ -22,6 +22,9 @@
 
 'use strict';
 
+/* __IIFE_WRAPPED__ */
+(function () {
+
 /* ------------------------------------------------------------------ */
 /*  Known Auth Providers                                               */
 /* ------------------------------------------------------------------ */
@@ -56,6 +59,61 @@ const PROXY_SIGNATURES = [
   'evilproxy',
   'caffeine', // PhaaS framework
 ];
+
+/* ------------------------------------------------------------------ */
+/*  Legitimate Major Domain Allowlist                                  */
+/* ------------------------------------------------------------------ */
+// Hard allowlist for popular legitimate sites that consistently trip
+// proxy heuristics (lots of CDN scripts, no CSP meta tag, "Sign in with
+// Google/Microsoft" buttons that reference auth providers in body text).
+// Matches both bare domain and any subdomain.
+
+const LEGIT_DOMAIN_ALLOWLIST = new Set([
+  'linkedin.com',
+  'github.com',
+  'gitlab.com',
+  'bitbucket.org',
+  'stackoverflow.com',
+  'stackexchange.com',
+  'reddit.com',
+  'twitter.com',
+  'x.com',
+  'facebook.com',
+  'instagram.com',
+  'youtube.com',
+  'wikipedia.org',
+  'medium.com',
+  'substack.com',
+  'notion.so',
+  'figma.com',
+  'slack.com',
+  'discord.com',
+  'zoom.us',
+  'spotify.com',
+  'netflix.com',
+  'amazon.com',
+  'ebay.com',
+  'paypal.com',
+  'cloudflare.com',
+  'tryhackme.com',
+  'hackthebox.com',
+  'protonmail.com',
+  'proton.me',
+  'mail.proton.me',
+  'anthropic.com',
+  'openai.com',
+  'huggingface.co',
+  'kaggle.com',
+]);
+
+function isLegitAllowlistedHost(hostname) {
+  if (!hostname) return false;
+  if (LEGIT_DOMAIN_ALLOWLIST.has(hostname)) return true;
+  for (const root of LEGIT_DOMAIN_ALLOWLIST) {
+    if (hostname.endsWith('.' + root)) return true;
+  }
+  return false;
+}
 
 /* ------------------------------------------------------------------ */
 /*  Signal Functions                                                    */
@@ -365,6 +423,10 @@ function runProxyGuardAnalysis() {
 
   const hostname = globalThis.location?.hostname || '';
   if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') return;
+  // Skip popular legitimate sites — these are not Evilginx/Modlishka/Muraena
+  // hosts and the soft signals (CDN scripts, missing CSP meta, "Sign in with
+  // Google" copy) consistently produce false positives.
+  if (isLegitAllowlistedHost(hostname)) return;
 
   const doc = document;
   const url = globalThis.location?.href || '';
@@ -433,6 +495,7 @@ if (typeof globalThis !== 'undefined') {
     calculateProxyRiskScore,
     injectProxyWarningBanner,
     runProxyGuardAnalysis,
+    isLegitAllowlistedHost,
   };
 }
 
@@ -443,3 +506,5 @@ if (typeof globalThis !== 'undefined') {
 if (typeof document !== 'undefined' && typeof process === 'undefined') {
   runProxyGuardAnalysis();
 }
+
+})();

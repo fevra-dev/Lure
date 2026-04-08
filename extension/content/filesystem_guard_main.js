@@ -22,6 +22,9 @@
 
 'use strict';
 
+/* __IIFE_WRAPPED__ */
+(function () {
+
 (function () {
   const hasFSA = (
     typeof window.showDirectoryPicker !== 'undefined' ||
@@ -187,4 +190,6 @@
       }
     }
   }
+})();
+
 })();

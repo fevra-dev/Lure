@@ -7,6 +7,9 @@
 
 'use strict';
 
+/* __IIFE_WRAPPED__ */
+(function () {
+
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.id) {
   window.addEventListener('PHISHOPS_WEBRTC_SYNTHETIC', (event) => {
     const { signals, riskScore, severity } = event.detail ?? {};
@@ -29,3 +32,5 @@ if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.run
     }
   });
 }
+
+})();

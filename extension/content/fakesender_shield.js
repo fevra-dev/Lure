@@ -23,6 +23,9 @@
 
 'use strict';
 
+/* __IIFE_WRAPPED__ */
+(function () {
+
 /* ------------------------------------------------------------------ */
 /*  Helpdesk Platform Database                                         */
 /* ------------------------------------------------------------------ */
@@ -550,3 +553,5 @@ if (typeof globalThis !== 'undefined') {
     runFakeSenderAnalysis,
   };
 }
+
+})();

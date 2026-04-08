@@ -19,6 +19,7 @@ const {
   checkResponseTimingAnomaly,
   calculateProxyRiskScore,
   injectProxyWarningBanner,
+  isLegitAllowlistedHost,
 } = globalThis.__phishopsExports.proxy_guard;
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
@@ -456,5 +457,35 @@ describe('injectProxyWarningBanner', () => {
     const dismiss = doc.getElementById('phishops-proxy-dismiss');
     dismiss.click();
     expect(doc.getElementById('phishops-proxy-banner')).toBeNull();
+  });
+});
+
+/* ================================================================== */
+/*  isLegitAllowlistedHost — false-positive suppression                */
+/* ================================================================== */
+
+describe('isLegitAllowlistedHost', () => {
+  it('matches a bare allowlisted domain', () => {
+    expect(isLegitAllowlistedHost('linkedin.com')).toBe(true);
+    expect(isLegitAllowlistedHost('github.com')).toBe(true);
+    expect(isLegitAllowlistedHost('tryhackme.com')).toBe(true);
+  });
+
+  it('matches subdomains of allowlisted roots', () => {
+    expect(isLegitAllowlistedHost('www.linkedin.com')).toBe(true);
+    expect(isLegitAllowlistedHost('jobs.linkedin.com')).toBe(true);
+    expect(isLegitAllowlistedHost('api.github.com')).toBe(true);
+  });
+
+  it('does not match unrelated hosts', () => {
+    expect(isLegitAllowlistedHost('linkedin.evil.com')).toBe(false);
+    expect(isLegitAllowlistedHost('linkedinphish.io')).toBe(false);
+    expect(isLegitAllowlistedHost('attacker.com')).toBe(false);
+  });
+
+  it('handles empty hostname', () => {
+    expect(isLegitAllowlistedHost('')).toBe(false);
+    expect(isLegitAllowlistedHost(null)).toBe(false);
+    expect(isLegitAllowlistedHost(undefined)).toBe(false);
   });
 });

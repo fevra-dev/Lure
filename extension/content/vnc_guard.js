@@ -26,6 +26,9 @@
 
 'use strict';
 
+/* __IIFE_WRAPPED__ */
+(function () {
+
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
@@ -330,6 +333,16 @@ function runVncGuardAnalysis() {
     ...loginSignals,
   ];
 
+  // Anti-FP guard: noVNC library detection alone (or combined with the
+  // weak login_context_without_forms signal) consistently false-positives
+  // on legitimate VM lab platforms (TryHackMe, HackTheBox, Apache Guacamole,
+  // GitPod) that preload noVNC. EvilnoVNC pages always exhibit at least one
+  // hard runtime indicator: a viewport-sized canvas, a VNC-port WebSocket,
+  // or RFB protocol strings. Require at least one of these before alerting.
+  const hasHardIndicator =
+    canvasSignals.length > 0 || wsSignals.length > 0 || rfbSignals.length > 0;
+  if (!hasHardIndicator) return;
+
   const { riskScore, signalList } = calculateVncRiskScore(allSignals);
 
   if (riskScore < 0.50) return;
@@ -384,3 +397,5 @@ if (typeof globalThis !== 'undefined') {
     runVncGuardAnalysis,
   };
 }
+
+})();

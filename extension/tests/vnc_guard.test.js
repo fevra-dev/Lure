@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
 import '../content/vnc_guard.js';
-const { checkNoVncLibraryDetected, checkCanvasPrimaryInteraction, checkWebSocketToNonStandardPort, checkRfbProtocolIndicators, checkLoginContextWithoutForms, calculateVncRiskScore, injectVncWarningBanner } = globalThis.__phishopsExports['vnc_guard'];
+const { checkNoVncLibraryDetected, checkCanvasPrimaryInteraction, checkWebSocketToNonStandardPort, checkRfbProtocolIndicators, checkLoginContextWithoutForms, calculateVncRiskScore, injectVncWarningBanner, runVncGuardAnalysis } = globalThis.__phishopsExports['vnc_guard'];
 
 function makeDoc(html = '<html><head></head><body></body></html>') {
   const dom = new JSDOM(html);
@@ -378,5 +378,72 @@ describe('injectVncWarningBanner', () => {
 
     const banners = dom.window.document.querySelectorAll('#phishops-vnc-banner');
     expect(banners).toHaveLength(1);
+  });
+});
+
+/* ================================================================== */
+/*  runVncGuardAnalysis — hard-indicator FP gate                       */
+/* ================================================================== */
+
+describe('runVncGuardAnalysis hard-indicator gate', () => {
+  function setupAnalysisDoc(html) {
+    const dom = new JSDOM(html, { url: 'https://tryhackme.com/forgot' });
+    vi.stubGlobal('document', dom.window.document);
+    vi.stubGlobal('location', dom.window.location);
+    vi.stubGlobal('innerWidth', 1280);
+    vi.stubGlobal('innerHeight', 720);
+    return dom.window.document;
+  }
+
+  it('does NOT alert when only library + login_context are present (legit VM lab platform)', () => {
+    // Mimics TryHackMe-style page: noVNC preloaded + sign-in copy, no canvas, no VNC ports
+    const doc = setupAnalysisDoc(`
+      <html>
+        <head>
+          <title>TryHackMe | Forgot Password</title>
+          <script src="/static/js/noVNC.min.js"></script>
+        </head>
+        <body><h1>Forgot password — sign in to your account</h1></body>
+      </html>
+    `);
+
+    runVncGuardAnalysis();
+
+    expect(doc.getElementById('phishops-vnc-banner')).toBeNull();
+  });
+
+  it('DOES alert when library detection is corroborated by a viewport-sized canvas', () => {
+    const doc = setupAnalysisDoc(`
+      <html>
+        <head>
+          <title>Sign in to your account</title>
+          <script src="/static/js/noVNC.min.js"></script>
+        </head>
+        <body>
+          <canvas width="1280" height="720"></canvas>
+          <p>Please sign in</p>
+        </body>
+      </html>
+    `);
+
+    runVncGuardAnalysis();
+
+    expect(doc.getElementById('phishops-vnc-banner')).not.toBeNull();
+  });
+
+  it('DOES alert when library detection is corroborated by RFB protocol indicators', () => {
+    const doc = setupAnalysisDoc(`
+      <html>
+        <head><title>Login</title></head>
+        <body>
+          <script src="noVNC.js"></script>
+          <script>const protocol = "RFB 003.008";</script>
+        </body>
+      </html>
+    `);
+
+    runVncGuardAnalysis();
+
+    expect(doc.getElementById('phishops-vnc-banner')).not.toBeNull();
   });
 });

@@ -27,6 +27,9 @@
 
 'use strict';
 
+/* __IIFE_WRAPPED__ */
+(function () {
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -439,3 +442,5 @@ if (typeof globalThis !== 'undefined') {
     installGetDisplayMediaInterceptor,
   };
 }
+
+})();

@@ -22,6 +22,9 @@
 
 'use strict';
 
+/* __IIFE_WRAPPED__ */
+(function () {
+
 /* ------------------------------------------------------------------ */
 /*  Known Account Flow Domains                                         */
 /* ------------------------------------------------------------------ */
@@ -417,3 +420,5 @@ if (typeof globalThis !== 'undefined') {
     runSyncGuardAnalysis,
   };
 }
+
+})();
