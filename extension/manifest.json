@@ -27,6 +27,11 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
+      "js": ["content/allowlist_gate.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
       "js": ["lib/shadow_dom_utils.js"],
       "run_at": "document_start"
     },
