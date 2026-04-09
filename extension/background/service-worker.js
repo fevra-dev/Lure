@@ -32,14 +32,26 @@
 import { emitTelemetry } from '../lib/telemetry.js';
 import { triageEvent } from '../lib/triage.js';
 import { syncThreatIntel, getStoredThreatIntel, isDomainKnownBad } from '../lib/threat_intel_sync.js';
+import { isDomainAllowlisted } from '../lib/allowlist.js';
 
 /**
  * Triage-enriched telemetry emitter.
  * Every event passes through the NIST 800-61r3 triage engine before persistence.
  */
-function emitTriagedTelemetry(event) {
+async function emitTriagedTelemetry(event) {
+  const hostname = _extractHostname(event.url);
+  if (hostname && await isDomainAllowlisted(hostname)) return;
   const triaged = triageEvent(event);
   emitTelemetry(triaged);
+}
+
+function _extractHostname(url) {
+  if (!url) return '';
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
 }
 
 // =============================================================================
