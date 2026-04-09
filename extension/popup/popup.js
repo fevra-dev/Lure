@@ -81,6 +81,7 @@ let canvas, ctx;
 let totalEl, highEl, criticalEl;
 let telemetryDot, telemetryText, toggle;
 let eventsPanel;
+let allowlistInput, allowlistAddBtn, allowlistDomains, allowlistCount;
 
 /* ── State ──────────────────────────────────────────────────── */
 
@@ -127,6 +128,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   clearAllBtn.addEventListener('click', handleClearAll);
   clearOldBtn.addEventListener('click', handleClearOld);
 
+  // Allowlist editor
+  allowlistInput = document.getElementById('allowlistInput');
+  allowlistAddBtn = document.getElementById('allowlistAddBtn');
+  allowlistDomains = document.getElementById('allowlistDomains');
+  allowlistCount = document.getElementById('allowlistCount');
+
+  allowlistAddBtn.addEventListener('click', handleAddDomain);
+  allowlistInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleAddDomain();
+  });
+
+  allowlistDomains.addEventListener('click', (e) => {
+    const btn = e.target.closest('.allowlist-chip-remove');
+    if (!btn) return;
+    handleRemoveDomain(btn.dataset.domain);
+  });
+
+  loadAllowlist();
+
   // Footer: version + detector count
   try {
     const manifest = chrome.runtime.getManifest();
@@ -163,6 +183,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Live updates while popup is open
   try {
     chrome.storage.onChanged.addListener((changes) => {
+      if (changes.phishops_user_allowlist) {
+        loadAllowlist();
+      }
       if (!changes[STORAGE_KEY]) return;
       const newEvents = changes[STORAGE_KEY].newValue || [];
       const added = newEvents.length - lastEventCount;
@@ -603,6 +626,64 @@ async function handleClearAll() {
     console.warn('[LURE popup] clear all failed:', err);
   }
 }
+
+/* ── Allowlist handlers ─────────────────────────────────────── */
+
+async function loadAllowlist() {
+  const api = window.LureAllowlist;
+  if (!api) return;
+  const list = await api.getUserAllowlist();
+  renderAllowlist(list);
+}
+
+function renderAllowlist(list) {
+  if (!allowlistDomains) return;
+  const count = list.length;
+  allowlistCount.textContent = `${count} domain${count === 1 ? '' : 's'}`;
+
+  if (count === 0) {
+    allowlistDomains.innerHTML = '<div class="allowlist-empty">No custom domains added.</div>';
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+  list.forEach((domain) => {
+    const chip = document.createElement('span');
+    chip.className = 'allowlist-chip';
+    chip.innerHTML = `${_escapeHtml(domain)}<button type="button" class="allowlist-chip-remove" data-domain="${_escapeHtml(domain)}" title="Remove">\u00d7</button>`;
+    frag.appendChild(chip);
+  });
+  allowlistDomains.innerHTML = '';
+  allowlistDomains.appendChild(frag);
+}
+
+async function handleAddDomain() {
+  const api = window.LureAllowlist;
+  if (!api || !allowlistInput) return;
+
+  const raw = allowlistInput.value.trim().toLowerCase().replace(/^www\./, '');
+  if (!raw) return;
+
+  // Basic domain validation
+  if (!/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/.test(raw)) {
+    allowlistInput.style.borderColor = '#c25e5e';
+    setTimeout(() => { allowlistInput.style.borderColor = ''; }, 1200);
+    return;
+  }
+
+  await api.addToUserAllowlist(raw);
+  allowlistInput.value = '';
+  await loadAllowlist();
+}
+
+async function handleRemoveDomain(domain) {
+  const api = window.LureAllowlist;
+  if (!api || !domain) return;
+  await api.removeFromUserAllowlist(domain);
+  await loadAllowlist();
+}
+
+/* ── Clear handlers ─────────────────────────────────────────── */
 
 async function handleClearOld() {
   try {
