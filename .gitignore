@@ -1,3 +1,43 @@
 node_modules/
 .claude/
 .agents/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Binary research/plan files
+*.docx
+*.png
+
+# Legacy wave development folders (superseded by extension/)
+wave1/
+wave2/
+wave3/
+
+# Claude/session scaffolding files
+examples.md
+phrases.md
+structures.md
+stop-slop-SKILL.md
+skills-lock.json
+
+# Scratch design files
+conceptui-phish.html
+phishing_defense_hub.jsx
+
+# Session artifacts
+Terminal Saved Output.txt
+LURE Platform Audit*.md
+PHISHOPS_PORTFOLIO_PROGRESS.md
+
+# Auto-generated compass artifacts
+Research/compass_artifact_*.md
+
+# Chrome extension — reserved directory names must not be bundled
+extension/__tests__/
